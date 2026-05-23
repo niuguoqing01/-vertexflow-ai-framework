@@ -50,6 +50,30 @@ public class QdrantVectorStore implements VectorStore {
         }
     }
 
+    @Override
+    public int deleteByDocumentId(String documentId) {
+        if (documentId == null || documentId.isBlank()) {
+            return 0;
+        }
+
+        Map<String, Object> match = new LinkedHashMap<>();
+        match.put("value", documentId);
+
+        Map<String, Object> condition = new LinkedHashMap<>();
+        condition.put("key", "documentId");
+        condition.put("match", match);
+
+        Map<String, Object> filter = new LinkedHashMap<>();
+        filter.put("must", List.of(condition));
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("filter", filter);
+
+        sendPost("/collections/" + collectionName + "/points/delete?wait=true", body);
+
+        return -1;
+    }
+
     private QdrantVectorStore(Builder builder) {
         this.url = removeTrailingSlash(builder.url);
         this.collectionName = builder.collectionName;

@@ -24,6 +24,19 @@ public class InMemoryVectorStore implements VectorStore {
                 .anyMatch(item -> item.chunk().id().equals(chunkId));
     }
 
+    @Override
+    public int deleteByDocumentId(String documentId) {
+        if (documentId == null || documentId.isBlank()) {
+            return 0;
+        }
+
+        int before = items.size();
+
+        items.removeIf(item -> item.chunk().documentId().equals(documentId));
+
+        return before - items.size();
+    }
+
     public InMemoryVectorStore(EmbeddingModel embeddingModel) {
         this.embeddingModel = embeddingModel;
     }

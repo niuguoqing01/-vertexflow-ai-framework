@@ -113,6 +113,7 @@ public class Main {
         testPdfDocumentLoader(model);
         testUrlDocumentLoader(model);
         testAddDocumentResult(model);
+        testDeleteDocument(model);
     }
 
     private static void testPrompt() {
@@ -1057,5 +1058,37 @@ public class Main {
         System.out.println("totalChunks: " + second.totalChunks());
         System.out.println("addedChunks: " + second.addedChunks());
         System.out.println("skippedChunks: " + second.skippedChunks());
+    }
+
+    private static void testDeleteDocument(ChatModel model) {
+        System.out.println();
+        System.out.println("[36] DeleteDocument test");
+
+        RagEngine rag = new RagEngine(
+                model,
+                new InMemoryVectorStore(new SimpleTextEmbedding(256)),
+                new MarkdownDocumentSplitter(300, 50),
+                RagOptions.defaults()
+                        .setTopK(3)
+                        .setReturnSources(true)
+        );
+
+        Document document = new Document("delete-doc", """
+            VertexFlow AI Framework supports deleteDocument.
+            This document should be removed from vector store.
+            """);
+
+        AddDocumentResult addResult = rag.addDocumentWithResult(document);
+
+        System.out.println("addedChunks: " + addResult.addedChunks());
+
+        RagAnswer beforeDelete = rag.askWithSources("What does delete-doc support?");
+        System.out.println("before delete sources size: " + beforeDelete.sources().size());
+
+        int deleted = rag.deleteDocument("delete-doc");
+        System.out.println("deleted chunks: " + deleted);
+
+        RagAnswer afterDelete = rag.askWithSources("What does delete-doc support?");
+        System.out.println("after delete sources size: " + afterDelete.sources().size());
     }
 }

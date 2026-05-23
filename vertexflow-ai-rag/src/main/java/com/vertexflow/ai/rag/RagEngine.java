@@ -85,6 +85,14 @@ public class RagEngine {
         );
     }
 
+    public int deleteDocument(String documentId) {
+        if (documentId == null || documentId.isBlank()) {
+            return 0;
+        }
+
+        return vectorStore.deleteByDocumentId(documentId);
+    }
+
     public String ask(String question) {
         return askWithSources(question).content();
     }

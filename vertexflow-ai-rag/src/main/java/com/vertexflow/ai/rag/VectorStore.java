@@ -11,4 +11,8 @@ public interface VectorStore {
     default boolean exists(String chunkId) {
         return false;
     }
+
+    default int deleteByDocumentId(String documentId) {
+        return 0;
+    }
 }
