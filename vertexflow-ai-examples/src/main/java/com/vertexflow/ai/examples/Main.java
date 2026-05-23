@@ -40,6 +40,7 @@ import com.vertexflow.ai.model.openai.OpenAiToolCallParser;
 import com.vertexflow.ai.core.tool.SimpleToolAgent;
 import com.vertexflow.ai.core.tool.AgentResponse;
 import com.vertexflow.ai.core.tool.AgentStep;
+import com.vertexflow.ai.core.tool.AgentOptions;
 
 import java.util.List;
 import java.util.Map;
@@ -100,6 +101,7 @@ public class Main {
         testToolChatModel(model);
         testSimpleToolAgent(model);
         testSimpleToolAgentTrace(model);
+        testSimpleToolAgentOptions(model);
     }
 
     private static void testPrompt() {
@@ -796,6 +798,7 @@ public class Main {
                 .chatModel(model)
                 .toolRegistry(registry)
                 .toolCallParser(new OpenAiToolCallParser())
+                .maxSteps(10)
                 .build();
 
         String answer = agent.chat("Use the getWeather tool to get the weather in Beijing, then answer me.");
@@ -815,6 +818,7 @@ public class Main {
                 .chatModel(model)
                 .toolRegistry(registry)
                 .toolCallParser(new OpenAiToolCallParser())
+                .maxSteps(10)
                 .build();
 
         AgentResponse response = agent.run("You must call getWeather with city=Beijing, then give me the final answer.");
@@ -829,5 +833,32 @@ public class Main {
             System.out.println("  name: " + step.name());
             System.out.println("  content: " + step.content());
         }
+    }
+
+    private static void testSimpleToolAgentOptions(ChatModel model) {
+        System.out.println();
+        System.out.println("[29] SimpleToolAgent Options test");
+
+        ToolRegistry registry = new ToolRegistry();
+        registry.register(new DemoWeatherTool());
+
+        SimpleToolAgent agent = SimpleToolAgent.builder()
+                .chatModel(model)
+                .toolRegistry(registry)
+                .toolCallParser(new OpenAiToolCallParser())
+                .options(AgentOptions.builder()
+                        .maxSteps(10)
+                        .returnSteps(true)
+                        .build())
+                .build();
+
+        AgentResponse response = agent.run(
+                "Do not answer directly. You must call the getWeather tool with city=Beijing first, then answer."
+        );
+
+        System.out.println("answer:");
+        System.out.println(response.answer());
+
+        System.out.println("steps size: " + response.steps().size());
     }
 }

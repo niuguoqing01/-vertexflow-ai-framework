@@ -16,11 +16,13 @@ public class SimpleToolAgent {
     private final ChatModel chatModel;
     private final ToolRegistry toolRegistry;
     private final ToolCallParser toolCallParser;
+    private final AgentOptions options;
 
     private SimpleToolAgent(Builder builder) {
         this.chatModel = builder.chatModel;
         this.toolRegistry = builder.toolRegistry;
         this.toolCallParser = builder.toolCallParser;
+        this.options = builder.options == null ? AgentOptions.defaults() : builder.options;
     }
 
     public static Builder builder() {
@@ -33,6 +35,7 @@ public class SimpleToolAgent {
 
     public AgentResponse run(String userMessage) {
         List<AgentStep> steps = new ArrayList<>();
+        int currentStep = 0;
 
         steps.add(new AgentStep(
                 AgentStepType.USER_INPUT,
@@ -40,6 +43,8 @@ public class SimpleToolAgent {
                 userMessage,
                 userMessage
         ));
+        currentStep++;
+        checkMaxSteps(currentStep);
 
         ChatResponse response = callWithTools(userMessage);
 
@@ -49,6 +54,9 @@ public class SimpleToolAgent {
                 response.content(),
                 response
         ));
+
+        currentStep++;
+        checkMaxSteps(currentStep);
 
         List<ToolCall> toolCalls = toolCallParser.parse(response.rawResponse());
 
@@ -66,6 +74,8 @@ public class SimpleToolAgent {
         }
 
         for (ToolCall toolCall : toolCalls) {
+            currentStep++;
+            checkMaxSteps(currentStep);
             steps.add(new AgentStep(
                     AgentStepType.TOOL_CALL,
                     toolCall.name(),
@@ -78,6 +88,8 @@ public class SimpleToolAgent {
         List<ToolCallResult> results = executor.executeAll(toolCalls);
 
         for (ToolCallResult result : results) {
+            currentStep++;
+            checkMaxSteps(currentStep);
             steps.add(new AgentStep(
                     AgentStepType.TOOL_RESULT,
                     result.toolCall().name(),
@@ -105,7 +117,8 @@ public class SimpleToolAgent {
                         Tool results:
                         %s
                         """.formatted(userMessage, toolResultText)));
-
+        currentStep++;
+        checkMaxSteps(currentStep);
         String finalAnswer = chatModel.call(finalRequest).content();
 
         steps.add(new AgentStep(
@@ -117,7 +130,14 @@ public class SimpleToolAgent {
 
         return new AgentResponse(finalAnswer, steps);
     }
-
+    private void checkMaxSteps(int currentStep) {
+        if (currentStep > options.getMaxSteps()) {
+            throw new AiException(
+                    AiErrorCode.UNSUPPORTED_OPERATION,
+                    "Agent max steps exceeded. maxSteps=" + options.getMaxSteps()
+            );
+        }
+    }
     private ChatResponse callWithTools(String userMessage) {
         if (!(chatModel instanceof ToolChatModel toolChatModel)) {
             throw new AiException(AiErrorCode.UNSUPPORTED_OPERATION, "Current chatModel does not support tool chat");
@@ -141,6 +161,19 @@ public class SimpleToolAgent {
         private ChatModel chatModel;
         private ToolRegistry toolRegistry;
         private ToolCallParser toolCallParser;
+        private AgentOptions options;
+
+        public Builder options(AgentOptions options) {
+            this.options = options;
+            return this;
+        }
+
+        public Builder maxSteps(int maxSteps) {
+            this.options = AgentOptions.builder()
+                    .maxSteps(maxSteps)
+                    .build();
+            return this;
+        }
 
         public Builder chatModel(ChatModel chatModel) {
             this.chatModel = chatModel;
