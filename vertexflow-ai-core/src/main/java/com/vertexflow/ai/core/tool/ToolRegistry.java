@@ -74,9 +74,10 @@ public class ToolRegistry {
 
             return ToolResult.success(result);
         } catch (AiException e) {
-            throw e;
+            return ToolResult.failure(e.getCode(), e.getMessage());
         } catch (Exception e) {
-            return ToolResult.failure("Tool execution failed: " + e.getMessage());
+            Throwable cause = e.getCause() == null ? e : e.getCause();
+            return ToolResult.failure("TOOL_EXECUTION_ERROR", "Tool execution failed: " + cause.getMessage());
         }
     }
 

@@ -102,18 +102,39 @@ public class SimpleToolAgent {
         for (ToolCallResult result : results) {
             currentStep++;
             checkMaxSteps(currentStep);
+
+            ToolResult toolResult = result.result();
+
+            String stepContent = toolResult.success()
+                    ? toolResult.content()
+                    : "Tool failed. errorCode=" + toolResult.errorCode()
+                    + ", errorMessage=" + toolResult.errorMessage();
+
             steps.add(new AgentStep(
                     AgentStepType.TOOL_RESULT,
                     result.toolCall().name(),
-                    result.result().content(),
+                    stepContent,
                     result
             ));
         }
 
         String toolResultText = results.stream()
-                .map(result -> "Tool: " + result.toolCall().name()
-                        + "\nArguments: " + result.toolCall().arguments()
-                        + "\nResult: " + result.result().content())
+                .map(result -> {
+                    ToolResult toolResult = result.result();
+
+                    if (toolResult.success()) {
+                        return "Tool: " + result.toolCall().name()
+                                + "\nArguments: " + result.toolCall().arguments()
+                                + "\nSuccess: true"
+                                + "\nResult: " + toolResult.content();
+                    }
+
+                    return "Tool: " + result.toolCall().name()
+                            + "\nArguments: " + result.toolCall().arguments()
+                            + "\nSuccess: false"
+                            + "\nErrorCode: " + toolResult.errorCode()
+                            + "\nErrorMessage: " + toolResult.errorMessage();
+                })
                 .collect(Collectors.joining("\n\n"));
 
         ChatRequest finalRequest = new ChatRequest()

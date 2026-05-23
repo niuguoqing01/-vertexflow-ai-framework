@@ -19,4 +19,10 @@ public class DemoWeatherTool {
     ) {
         return a + b;
     }
+    @AiTool(name = "failTool", description = "A demo tool that always fails")
+    public String failTool(
+            @ToolParam(value = "reason", description = "Failure reason") String reason
+    ) {
+        throw new IllegalStateException("Demo tool failed: " + reason);
+    }
 }

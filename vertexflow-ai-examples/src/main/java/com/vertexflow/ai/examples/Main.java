@@ -104,6 +104,7 @@ public class Main {
         testSimpleToolAgentTrace(model);
         testSimpleToolAgentOptions(model);
         testAgentException(model);
+        testToolFailurePropagation();
     }
 
     private static void testPrompt() {
@@ -884,5 +885,24 @@ public class Main {
             System.out.println("agent errorCode: " + e.getCode());
             System.out.println("agent message: " + e.getMessage());
         }
+    }
+
+    private static void testToolFailurePropagation() {
+        System.out.println();
+        System.out.println("[31] Tool failure propagation test");
+
+        ToolRegistry registry = new ToolRegistry();
+        registry.register(new DemoWeatherTool());
+
+        ToolCall toolCall = new ToolCall("failTool", Map.of(
+                "reason", "testing failure propagation"
+        ));
+
+        ToolCallExecutor executor = ToolCallExecutor.create(registry);
+        ToolCallResult result = executor.execute(toolCall);
+
+        System.out.println("tool success: " + result.result().success());
+        System.out.println("tool errorCode: " + result.result().errorCode());
+        System.out.println("tool errorMessage: " + result.result().errorMessage());
     }
 }
