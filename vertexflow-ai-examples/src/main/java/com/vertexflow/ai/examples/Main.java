@@ -31,6 +31,7 @@ import com.vertexflow.ai.rag.RagBuilder;
 import com.vertexflow.ai.core.VertexFlowAi;
 import com.vertexflow.ai.core.chat.ChatOptions;
 import com.vertexflow.ai.core.chat.ChatRequest;
+import com.vertexflow.ai.core.chat.ChatResponse;
 
 import java.util.List;
 import java.util.Map;
@@ -78,6 +79,7 @@ public class Main {
         testAiClientBuilder(model);
         testAiClientStreaming(model);
         testChatOptions(model);
+        testChatResponse(model);
     }
 
     private static void testPrompt() {
@@ -476,5 +478,30 @@ public class Main {
 
         System.out.println("answer:");
         System.out.println(answer);
+    }
+
+    private static void testChatResponse(ChatModel model) {
+        System.out.println();
+        System.out.println("[18] ChatResponse test");
+
+        ChatRequest request = new ChatRequest()
+                .addMessage(ChatMessage.system("You are a concise Java AI framework assistant."))
+                .addMessage(ChatMessage.user("Explain ChatResponse in VertexFlow AI Framework in one sentence."));
+
+        ChatResponse response = model.call(request);
+
+        System.out.println("content:");
+        System.out.println(response.content());
+
+        System.out.println("model: " + response.model());
+        System.out.println("finishReason: " + response.finishReason());
+
+        if (response.usage() != null) {
+            System.out.println("inputTokens: " + response.usage().inputTokens());
+            System.out.println("outputTokens: " + response.usage().outputTokens());
+            System.out.println("totalTokens: " + response.usage().totalTokens());
+        }
+
+        System.out.println("rawResponse exists: " + (response.rawResponse() != null));
     }
 }

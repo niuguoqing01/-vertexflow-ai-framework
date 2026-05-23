@@ -71,7 +71,12 @@ public class OpenAiCompatibleChatModel implements StreamingChatModel {
             }
 
             JsonNode root = objectMapper.readTree(response.body());
-            String content = root.path("choices").get(0).path("message").path("content").asText();
+            JsonNode choice = root.path("choices").get(0);
+
+            String content = choice.path("message").path("content").asText();
+            String finishReason = choice.path("finish_reason").isMissingNode()
+                    ? null
+                    : choice.path("finish_reason").asText(null);
 
             Integer inputTokens = root.path("usage").path("prompt_tokens").isMissingNode()
                     ? null
@@ -81,7 +86,17 @@ public class OpenAiCompatibleChatModel implements StreamingChatModel {
                     ? null
                     : root.path("usage").path("completion_tokens").asInt();
 
-            return new ChatResponse(content, finalModel, inputTokens, outputTokens);
+            Integer totalTokens = root.path("usage").path("total_tokens").isMissingNode()
+                    ? null
+                    : root.path("usage").path("total_tokens").asInt();
+
+            return new ChatResponse(
+                    content,
+                    finalModel,
+                    new com.vertexflow.ai.core.chat.TokenUsage(inputTokens, outputTokens, totalTokens),
+                    finishReason,
+                    response.body()
+            );
         } catch (Exception e) {
             throw new RuntimeException("OpenAI compatible chat model call error", e);
         }
