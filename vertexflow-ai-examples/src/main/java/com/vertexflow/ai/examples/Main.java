@@ -38,6 +38,8 @@ import com.vertexflow.ai.core.log.ConsoleAiCallLogger;
 import com.vertexflow.ai.core.memory.MemoryOptions;
 import com.vertexflow.ai.model.openai.OpenAiToolCallParser;
 import com.vertexflow.ai.core.tool.SimpleToolAgent;
+import com.vertexflow.ai.core.tool.AgentResponse;
+import com.vertexflow.ai.core.tool.AgentStep;
 
 import java.util.List;
 import java.util.Map;
@@ -97,6 +99,7 @@ public class Main {
         testOpenAiToolCallParser();
         testToolChatModel(model);
         testSimpleToolAgent(model);
+        testSimpleToolAgentTrace(model);
     }
 
     private static void testPrompt() {
@@ -799,5 +802,32 @@ public class Main {
 
         System.out.println("agent answer:");
         System.out.println(answer);
+    }
+
+    private static void testSimpleToolAgentTrace(ChatModel model) {
+        System.out.println();
+        System.out.println("[28] SimpleToolAgent Trace test");
+
+        ToolRegistry registry = new ToolRegistry();
+        registry.register(new DemoWeatherTool());
+
+        SimpleToolAgent agent = SimpleToolAgent.builder()
+                .chatModel(model)
+                .toolRegistry(registry)
+                .toolCallParser(new OpenAiToolCallParser())
+                .build();
+
+        AgentResponse response = agent.run("You must call getWeather with city=Beijing, then give me the final answer.");
+
+        System.out.println("agent answer:");
+        System.out.println(response.answer());
+
+        System.out.println();
+        System.out.println("agent steps:");
+        for (AgentStep step : response.steps()) {
+            System.out.println("- type: " + step.type());
+            System.out.println("  name: " + step.name());
+            System.out.println("  content: " + step.content());
+        }
     }
 }

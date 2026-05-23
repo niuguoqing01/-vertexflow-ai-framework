@@ -7,6 +7,7 @@ import com.vertexflow.ai.core.chat.ChatResponse;
 import com.vertexflow.ai.core.exception.AiErrorCode;
 import com.vertexflow.ai.core.exception.AiException;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,16 +28,63 @@ public class SimpleToolAgent {
     }
 
     public String chat(String userMessage) {
+        return run(userMessage).answer();
+    }
+
+    public AgentResponse run(String userMessage) {
+        List<AgentStep> steps = new ArrayList<>();
+
+        steps.add(new AgentStep(
+                AgentStepType.USER_INPUT,
+                "user",
+                userMessage,
+                userMessage
+        ));
+
         ChatResponse response = callWithTools(userMessage);
+
+        steps.add(new AgentStep(
+                AgentStepType.MODEL_RESPONSE,
+                "tool_chat_model",
+                response.content(),
+                response
+        ));
 
         List<ToolCall> toolCalls = toolCallParser.parse(response.rawResponse());
 
         if (toolCalls.isEmpty()) {
-            return response.content();
+            String answer = response.content();
+
+            steps.add(new AgentStep(
+                    AgentStepType.FINAL_ANSWER,
+                    "final_answer",
+                    answer,
+                    answer
+            ));
+
+            return new AgentResponse(answer, steps);
+        }
+
+        for (ToolCall toolCall : toolCalls) {
+            steps.add(new AgentStep(
+                    AgentStepType.TOOL_CALL,
+                    toolCall.name(),
+                    String.valueOf(toolCall.arguments()),
+                    toolCall
+            ));
         }
 
         ToolCallExecutor executor = ToolCallExecutor.create(toolRegistry);
         List<ToolCallResult> results = executor.executeAll(toolCalls);
+
+        for (ToolCallResult result : results) {
+            steps.add(new AgentStep(
+                    AgentStepType.TOOL_RESULT,
+                    result.toolCall().name(),
+                    result.result().content(),
+                    result
+            ));
+        }
 
         String toolResultText = results.stream()
                 .map(result -> "Tool: " + result.toolCall().name()
@@ -58,7 +106,16 @@ public class SimpleToolAgent {
                         %s
                         """.formatted(userMessage, toolResultText)));
 
-        return chatModel.call(finalRequest).content();
+        String finalAnswer = chatModel.call(finalRequest).content();
+
+        steps.add(new AgentStep(
+                AgentStepType.FINAL_ANSWER,
+                "final_answer",
+                finalAnswer,
+                finalAnswer
+        ));
+
+        return new AgentResponse(finalAnswer, steps);
     }
 
     private ChatResponse callWithTools(String userMessage) {
