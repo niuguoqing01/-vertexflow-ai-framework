@@ -1,6 +1,8 @@
 package com.vertexflow.ai.spring.boot.starter;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import java.util.ArrayList;
+import java.util.List;
 
 @ConfigurationProperties(prefix = "vertexflow.ai")
 public class VertexFlowAiProperties {
@@ -248,6 +250,20 @@ public class VertexFlowAiProperties {
          * Local document directory path for RAG.
          */
         private String documentLocation;
+
+        /**
+         * URL document list for RAG.
+         */
+        private List<String> documentUrls = new ArrayList<>();
+
+        public List<String> getDocumentUrls() {
+            return documentUrls;
+        }
+
+        public Rag setDocumentUrls(List<String> documentUrls) {
+            this.documentUrls = documentUrls;
+            return this;
+        }
 
         public String getDocumentLocation() {
             return documentLocation;
