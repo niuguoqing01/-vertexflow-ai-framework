@@ -13,19 +13,25 @@ public class RagEngine {
     private final ChatModel chatModel;
     private final DocumentSplitter splitter;
     private final VectorStore vectorStore;
+    private final RagOptions options;
 
     public RagEngine(ChatModel chatModel) {
         this(chatModel, new SimpleTextEmbedding(256));
     }
 
     public RagEngine(ChatModel chatModel, EmbeddingModel embeddingModel) {
-        this(chatModel, new InMemoryVectorStore(embeddingModel));
+        this(chatModel, new InMemoryVectorStore(embeddingModel), RagOptions.defaults());
     }
 
     public RagEngine(ChatModel chatModel, VectorStore vectorStore) {
+        this(chatModel, vectorStore, RagOptions.defaults());
+    }
+
+    public RagEngine(ChatModel chatModel, VectorStore vectorStore, RagOptions options) {
         this.chatModel = chatModel;
         this.splitter = new DocumentSplitter(300, 50);
         this.vectorStore = vectorStore;
+        this.options = options == null ? RagOptions.defaults() : options;
     }
 
     public void addDocument(Document document) {
@@ -34,7 +40,11 @@ public class RagEngine {
     }
 
     public String ask(String question) {
-        List<VectorSearchResult> results = vectorStore.search(question, 3);
+        return askWithSources(question).content();
+    }
+
+    public RagAnswer askWithSources(String question) {
+        List<VectorSearchResult> results = vectorStore.search(question, options.getTopK());
 
         String context = results.stream()
                 .map(result -> "- " + result.chunk().content())
@@ -55,6 +65,19 @@ public class RagEngine {
                 .addMessage(ChatMessage.system("You are the RAG assistant of VertexFlow AI Framework."))
                 .addMessage(ChatMessage.user(prompt));
 
-        return chatModel.call(request).content();
+        String answer = chatModel.call(request).content();
+
+        List<RagSource> sources = options.isReturnSources()
+                ? results.stream()
+                .map(result -> new RagSource(
+                        result.chunk().id(),
+                        result.chunk().documentId(),
+                        result.chunk().content(),
+                        result.score()
+                ))
+                .toList()
+                : List.of();
+
+        return new RagAnswer(answer, sources, context);
     }
 }

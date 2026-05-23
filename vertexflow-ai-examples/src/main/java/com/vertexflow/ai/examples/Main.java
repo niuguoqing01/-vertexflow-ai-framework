@@ -18,6 +18,9 @@ import com.vertexflow.ai.rag.SimpleTextEmbedding;
 import com.vertexflow.ai.rag.VectorSearchResult;
 import com.vertexflow.ai.rag.VectorStore;
 import com.vertexflow.ai.rag.DocumentSplitter;
+import com.vertexflow.ai.rag.RagAnswer;
+import com.vertexflow.ai.rag.RagOptions;
+import com.vertexflow.ai.rag.RagSource;
 
 import java.util.Map;
 
@@ -54,6 +57,7 @@ public class Main {
         testEmbedding(new SimpleTextEmbedding(256));
         testVectorStore();
         testRag(model);
+        testRagWithSources(model);
     }
 
     private static void testPrompt() {
@@ -160,6 +164,45 @@ public class Main {
         for (VectorSearchResult result : vectorStore.search("What is VectorStore?", 3)) {
             System.out.println("score: " + result.score());
             System.out.println("chunk: " + result.chunk().content());
+        }
+    }
+
+    private static void testRagWithSources(ChatModel model) {
+        System.out.println();
+        System.out.println("[8] RagEngine sources test");
+
+        RagOptions options = RagOptions.defaults()
+                .setTopK(2)
+                .setReturnSources(true);
+
+        RagEngine rag = new RagEngine(
+                model,
+                new InMemoryVectorStore(new SimpleTextEmbedding(256)),
+                options
+        );
+
+        rag.addDocument(new Document("doc-source-1", """
+            VertexFlow AI Framework provides ChatModel, StreamingChatModel, EmbeddingModel and VectorStore.
+            It is designed for Java developers who want to build AI applications with a simple framework API.
+            """));
+
+        rag.addDocument(new Document("doc-source-2", """
+            RagEngine uses VectorStore to retrieve relevant document chunks.
+            It then builds context and calls ChatModel to generate a grounded answer.
+            """));
+
+        RagAnswer answer = rag.askWithSources("How does RagEngine work?");
+
+        System.out.println("answer:");
+        System.out.println(answer.content());
+
+        System.out.println();
+        System.out.println("sources:");
+        for (RagSource source : answer.sources()) {
+            System.out.println("- documentId: " + source.documentId());
+            System.out.println("  chunkId: " + source.chunkId());
+            System.out.println("  score: " + source.score());
+            System.out.println("  content: " + source.content());
         }
     }
 }
