@@ -1,0 +1,21 @@
+# IDE
+.idea/
+*.iml
+
+# Claude
+.claude/
+
+# Maven
+target/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local config
+.env
+application-local.yml
+application-local.properties

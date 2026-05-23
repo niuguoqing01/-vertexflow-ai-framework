@@ -1,0 +1,124 @@
+package com.vertexflow.ai.model.openai;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vertexflow.ai.core.chat.ChatMessage;
+import com.vertexflow.ai.core.chat.ChatModel;
+import com.vertexflow.ai.core.chat.ChatRequest;
+import com.vertexflow.ai.core.chat.ChatResponse;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+@SuppressWarnings("unchecked")
+public class OpenAiCompatibleChatModel implements ChatModel {
+
+    private final String apiKey;
+    private final String baseUrl;
+    private final String model;
+    private final HttpClient httpClient;
+    private final ObjectMapper objectMapper;
+
+    private OpenAiCompatibleChatModel(Builder builder) {
+        this.apiKey = builder.apiKey;
+        this.baseUrl = builder.baseUrl;
+        this.model = builder.model;
+        this.httpClient = HttpClient.newHttpClient();
+        this.objectMapper = new ObjectMapper();
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    @Override
+    public ChatResponse call(ChatRequest request) {
+        try {
+            String finalModel = request.getModel() == null ? model : request.getModel();
+
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("model", finalModel);
+            body.put("temperature", request.getTemperature());
+            body.put("max_tokens", request.getMaxTokens());
+
+            List<Map<String, String>> messages = new ArrayList<>();
+            for (ChatMessage message : request.getMessages()) {
+                Map<String, String> item = new LinkedHashMap<>();
+                item.put("role", message.role().name().toLowerCase());
+                item.put("content", message.content());
+                messages.add(item);
+            }
+            body.put("messages", messages);
+
+            String json = objectMapper.writeValueAsString(body);
+
+            HttpRequest httpRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/chat/completions"))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + apiKey)
+                    .POST(HttpRequest.BodyPublishers.ofString(json))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new RuntimeException("AI request failed. status=" + response.statusCode() + ", body=" + response.body());
+            }
+
+            JsonNode root = objectMapper.readTree(response.body());
+            String content = root.path("choices").get(0).path("message").path("content").asText();
+
+            Integer inputTokens = root.path("usage").path("prompt_tokens").isMissingNode()
+                    ? null
+                    : root.path("usage").path("prompt_tokens").asInt();
+
+            Integer outputTokens = root.path("usage").path("completion_tokens").isMissingNode()
+                    ? null
+                    : root.path("usage").path("completion_tokens").asInt();
+
+            return new ChatResponse(content, finalModel, inputTokens, outputTokens);
+        } catch (Exception e) {
+            throw new RuntimeException("OpenAI compatible chat model call error", e);
+        }
+    }
+
+    public static class Builder {
+        private String apiKey;
+        private String baseUrl = "https://api.openai.com/v1";
+        private String model = "gpt-4o-mini";
+
+        public Builder apiKey(String apiKey) {
+            this.apiKey = apiKey;
+            return this;
+        }
+
+        public Builder baseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
+            return this;
+        }
+
+        public Builder model(String model) {
+            this.model = model;
+            return this;
+        }
+
+        public OpenAiCompatibleChatModel build() {
+            if (apiKey == null || apiKey.isBlank()) {
+                throw new IllegalArgumentException("apiKey is required");
+            }
+            if (baseUrl == null || baseUrl.isBlank()) {
+                throw new IllegalArgumentException("baseUrl is required");
+            }
+            if (model == null || model.isBlank()) {
+                throw new IllegalArgumentException("model is required");
+            }
+            return new OpenAiCompatibleChatModel(this);
+        }
+    }
+}
