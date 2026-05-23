@@ -50,6 +50,7 @@ import com.vertexflow.ai.core.tool.ReActAgent;
 import com.vertexflow.ai.core.tool.ReActAgentOptions;
 import com.vertexflow.ai.core.tool.AgentTraceJsonExporter;
 import com.vertexflow.ai.memory.RedisChatMemory;
+import com.vertexflow.ai.memory.JdbcChatMemory;
 
 import java.util.List;
 import java.util.Map;
@@ -128,6 +129,7 @@ public class Main {
         testReActScratchpadJsonRender();
         testAgentTraceJsonExporter(model);
         testRedisChatMemory(model);
+        testJdbcChatMemory(model);
     }
 
     private static void testPrompt() {
@@ -1437,6 +1439,41 @@ public class Main {
         System.out.println(first);
 
         String second = client.chat("我叫什么？我正在开发什么？");
+        System.out.println("second answer:");
+        System.out.println(second);
+
+        System.out.println("memory size: " + memory.get(conversationId).size());
+    }
+
+    private static void testJdbcChatMemory(ChatModel model) {
+        System.out.println();
+        System.out.println("[47] JdbcChatMemory test");
+
+        JdbcChatMemory memory = JdbcChatMemory.builder()
+                .url("jdbc:h2:file:./data/vertexflow-memory")
+                .username("sa")
+                .password("")
+                .tableName("vertexflow_chat_memory")
+                .maxMessages(10)
+                .autoCreateTable(true)
+                .build();
+
+        String conversationId = "jdbc-user-001";
+
+        memory.clear(conversationId);
+
+        AiClient client = AiClient.builder()
+                .chatModel(model)
+                .memory(memory)
+                .conversationId(conversationId)
+                .system("你是一个带 JDBC 记忆能力的中文 AI 助手。")
+                .build();
+
+        String first = client.chat("我叫牛国庆，我正在开发 VertexFlow AI Framework。");
+        System.out.println("first answer:");
+        System.out.println(first);
+
+        String second = client.chat("我叫什么？我正在开发什么项目？");
         System.out.println("second answer:");
         System.out.println(second);
 

@@ -40,7 +40,7 @@ vertexflow:
       document-location: vertexflow-ai-spring-boot-example/src/main/resources/docs
       document-urls:
         - https://example.com
-#type: memory：走内存，qdrant：走向量数据库
+#type: memory：走内存，qdrant：走向量数据库，jdb: 走数据库
     vector-store:
       type: qdrant
       qdrant:

@@ -201,6 +201,20 @@ public class VertexFlowAiProperties {
          */
         private Redis redis = new Redis();
 
+        /**
+         * JDBC memory configuration.
+         */
+        private Jdbc jdbc = new Jdbc();
+
+        public Jdbc getJdbc() {
+            return jdbc;
+        }
+
+        public Memory setJdbc(Jdbc jdbc) {
+            this.jdbc = jdbc;
+            return this;
+        }
+
         public String getType() {
             return type;
         }
@@ -580,6 +594,79 @@ public class VertexFlowAiProperties {
 
         public Redis setKeyPrefix(String keyPrefix) {
             this.keyPrefix = keyPrefix;
+            return this;
+        }
+    }
+
+    public static class Jdbc {
+
+        /**
+         * JDBC url.
+         */
+        private String url = "jdbc:h2:file:./data/vertexflow-memory";
+
+        /**
+         * JDBC username.
+         */
+        private String username = "sa";
+
+        /**
+         * JDBC password.
+         */
+        private String password = "";
+
+        /**
+         * Chat memory table name.
+         */
+        private String tableName = "vertexflow_chat_memory";
+
+        /**
+         * Whether to create table automatically.
+         */
+        private boolean autoCreateTable = true;
+
+        public String getUrl() {
+            return url;
+        }
+
+        public Jdbc setUrl(String url) {
+            this.url = url;
+            return this;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public Jdbc setUsername(String username) {
+            this.username = username;
+            return this;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public Jdbc setPassword(String password) {
+            this.password = password;
+            return this;
+        }
+
+        public String getTableName() {
+            return tableName;
+        }
+
+        public Jdbc setTableName(String tableName) {
+            this.tableName = tableName;
+            return this;
+        }
+
+        public boolean isAutoCreateTable() {
+            return autoCreateTable;
+        }
+
+        public Jdbc setAutoCreateTable(boolean autoCreateTable) {
+            this.autoCreateTable = autoCreateTable;
             return this;
         }
     }

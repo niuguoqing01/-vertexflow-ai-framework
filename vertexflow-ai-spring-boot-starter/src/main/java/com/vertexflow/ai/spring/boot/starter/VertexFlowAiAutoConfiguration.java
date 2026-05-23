@@ -6,6 +6,7 @@ import com.vertexflow.ai.core.log.AiCallLogger;
 import com.vertexflow.ai.core.log.ConsoleAiCallLogger;
 import com.vertexflow.ai.core.log.NoOpAiCallLogger;
 import com.vertexflow.ai.core.memory.ChatMemory;
+import com.vertexflow.ai.memory.JdbcChatMemory;
 import com.vertexflow.ai.memory.WindowChatMemory;
 import com.vertexflow.ai.model.openai.OpenAiCompatibleChatModel;
 import org.springframework.beans.factory.ObjectProvider;
@@ -32,6 +33,7 @@ import com.vertexflow.ai.rag.QdrantVectorStore;
 import com.vertexflow.ai.core.tool.ReActAgent;
 import com.vertexflow.ai.core.tool.ReActAgentOptions;
 import com.vertexflow.ai.memory.RedisChatMemory;
+
 
 import java.lang.reflect.Method;
 
@@ -185,6 +187,16 @@ public class VertexFlowAiAutoConfiguration {
                     .database(properties.getMemory().getRedis().getDatabase())
                     .keyPrefix(properties.getMemory().getRedis().getKeyPrefix())
                     .ttlSeconds(properties.getMemory().getRedis().getTtlSeconds())
+                    .maxMessages(properties.getMemory().getMaxMessages())
+                    .build();
+        }
+        if ("jdbc".equalsIgnoreCase(type)) {
+            return JdbcChatMemory.builder()
+                    .url(properties.getMemory().getJdbc().getUrl())
+                    .username(properties.getMemory().getJdbc().getUsername())
+                    .password(properties.getMemory().getJdbc().getPassword())
+                    .tableName(properties.getMemory().getJdbc().getTableName())
+                    .autoCreateTable(properties.getMemory().getJdbc().isAutoCreateTable())
                     .maxMessages(properties.getMemory().getMaxMessages())
                     .build();
         }
