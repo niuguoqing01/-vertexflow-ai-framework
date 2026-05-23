@@ -8,6 +8,7 @@ import com.vertexflow.ai.memory.WindowChatMemory;
 import com.vertexflow.ai.model.openai.OpenAiCompatibleChatModel;
 import com.vertexflow.ai.rag.Document;
 import com.vertexflow.ai.rag.RagEngine;
+import com.vertexflow.ai.core.chat.StreamingChatModel;
 
 import java.util.Map;
 
@@ -36,6 +37,7 @@ public class Main {
                 .build();
 
         testChat(model);
+        testStream(model);
         testRag(model);
     }
 
@@ -82,7 +84,7 @@ public class Main {
 
     private static void testRag(ChatModel model) {
         System.out.println();
-        System.out.println("[4] RagEngine test");
+        System.out.println("[5] RagEngine test");
 
         RagEngine rag = new RagEngine(model);
 
@@ -94,5 +96,23 @@ public class Main {
 
         String answer = rag.ask("What is VertexFlow AI Framework?");
         System.out.println(answer);
+    }
+    private static void testStream(ChatModel model) {
+        System.out.println();
+        System.out.println("[4] StreamingChatModel test");
+
+        if (!(model instanceof StreamingChatModel streamingModel)) {
+            System.out.println("Current model does not support streaming.");
+            return;
+        }
+
+        streamingModel.stream("Introduce RAG in one short paragraph.", response -> {
+            System.out.print(response.content());
+
+            if (response.finished()) {
+                System.out.println();
+                System.out.println("[stream finished]");
+            }
+        });
     }
 }

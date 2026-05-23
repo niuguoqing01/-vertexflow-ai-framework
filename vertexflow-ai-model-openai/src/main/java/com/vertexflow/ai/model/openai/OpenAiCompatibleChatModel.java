@@ -2,11 +2,10 @@ package com.vertexflow.ai.model.openai;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.vertexflow.ai.core.chat.ChatMessage;
-import com.vertexflow.ai.core.chat.ChatModel;
-import com.vertexflow.ai.core.chat.ChatRequest;
-import com.vertexflow.ai.core.chat.ChatResponse;
-
+import com.vertexflow.ai.core.chat.*;
+import com.vertexflow.ai.core.chat.ChatStreamHandler;
+import com.vertexflow.ai.core.chat.StreamChatResponse;
+import com.vertexflow.ai.core.chat.StreamingChatModel;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -17,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 @SuppressWarnings("unchecked")
-public class OpenAiCompatibleChatModel implements ChatModel {
+public class OpenAiCompatibleChatModel implements StreamingChatModel {
 
     private final String apiKey;
     private final String baseUrl;
@@ -119,6 +118,79 @@ public class OpenAiCompatibleChatModel implements ChatModel {
                 throw new IllegalArgumentException("model is required");
             }
             return new OpenAiCompatibleChatModel(this);
+        }
+    }
+    @Override
+    public void stream(ChatRequest request, ChatStreamHandler handler) {
+        try {
+            String finalModel = request.getModel() == null ? model : request.getModel();
+
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("model", finalModel);
+            body.put("temperature", request.getTemperature());
+            body.put("max_tokens", request.getMaxTokens());
+            body.put("stream", true);
+
+            List<Map<String, String>> messages = new ArrayList<>();
+            for (ChatMessage message : request.getMessages()) {
+                Map<String, String> item = new LinkedHashMap<>();
+                item.put("role", message.role().name().toLowerCase());
+                item.put("content", message.content());
+                messages.add(item);
+            }
+            body.put("messages", messages);
+
+            String json = objectMapper.writeValueAsString(body);
+
+            HttpRequest httpRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/chat/completions"))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + apiKey)
+                    .POST(HttpRequest.BodyPublishers.ofString(json))
+                    .build();
+
+            HttpResponse<java.io.InputStream> response = httpClient.send(
+                    httpRequest,
+                    HttpResponse.BodyHandlers.ofInputStream()
+            );
+
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                String errorBody = new String(response.body().readAllBytes());
+                throw new RuntimeException("AI stream request failed. status=" + response.statusCode() + ", body=" + errorBody);
+            }
+
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(response.body(), java.nio.charset.StandardCharsets.UTF_8)
+            )) {
+                String line;
+
+                while ((line = reader.readLine()) != null) {
+                    if (line.isBlank()) {
+                        continue;
+                    }
+
+                    if (!line.startsWith("data:")) {
+                        continue;
+                    }
+
+                    String data = line.substring("data:".length()).trim();
+
+                    if ("[DONE]".equals(data)) {
+                        handler.onMessage(new StreamChatResponse("", finalModel, true));
+                        break;
+                    }
+
+                    JsonNode root = objectMapper.readTree(data);
+                    JsonNode delta = root.path("choices").get(0).path("delta");
+                    String content = delta.path("content").asText("");
+
+                    if (!content.isEmpty()) {
+                        handler.onMessage(new StreamChatResponse(content, finalModel, false));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("OpenAI compatible streaming chat model call error", e);
         }
     }
 }
