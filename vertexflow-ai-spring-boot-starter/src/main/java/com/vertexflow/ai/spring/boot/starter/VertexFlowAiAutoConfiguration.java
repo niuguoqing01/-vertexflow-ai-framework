@@ -5,13 +5,16 @@ import com.vertexflow.ai.core.chat.ChatModel;
 import com.vertexflow.ai.core.log.AiCallLogger;
 import com.vertexflow.ai.core.log.ConsoleAiCallLogger;
 import com.vertexflow.ai.core.log.NoOpAiCallLogger;
+import com.vertexflow.ai.core.memory.ChatMemory;
+import com.vertexflow.ai.memory.WindowChatMemory;
 import com.vertexflow.ai.model.openai.OpenAiCompatibleChatModel;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
 
 @AutoConfiguration
 @ConditionalOnClass(AiClient.class)
@@ -22,11 +25,9 @@ public class VertexFlowAiAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public AiCallLogger aiCallLogger(VertexFlowAiProperties properties) {
-        if (properties.isConsoleLog()) {
-            return new ConsoleAiCallLogger();
-        }
-
-        return new NoOpAiCallLogger();
+        return properties.isConsoleLog()
+                ? new ConsoleAiCallLogger()
+                : new NoOpAiCallLogger();
     }
 
     @Bean
@@ -46,10 +47,31 @@ public class VertexFlowAiAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public AiClient aiClient(ChatModel chatModel) {
-        return AiClient.builder()
-                .chatModel(chatModel)
-                .system("You are VertexFlow AI assistant.")
+    @ConditionalOnProperty(prefix = "vertexflow.ai.memory", name = "enabled", havingValue = "true")
+    public ChatMemory chatMemory(VertexFlowAiProperties properties) {
+        return WindowChatMemory.builder()
+                .maxMessages(properties.getMemory().getMaxMessages())
                 .build();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public AiClient aiClient(
+            ChatModel chatModel,
+            VertexFlowAiProperties properties,
+            ObjectProvider<ChatMemory> chatMemoryProvider
+    ) {
+        AiClient.Builder builder = AiClient.builder()
+                .chatModel(chatModel)
+                .system("You are VertexFlow AI assistant.");
+
+        ChatMemory chatMemory = chatMemoryProvider.getIfAvailable();
+
+        if (chatMemory != null && properties.getMemory().isEnabled()) {
+            builder.memory(chatMemory)
+                    .conversationId(properties.getMemory().getConversationId());
+        }
+
+        return builder.build();
     }
 }

@@ -13,9 +13,19 @@ public class VertexFlowAiProperties {
     private Double temperature = 0.7;
     private Integer maxTokens = 2048;
     private boolean consoleLog = false;
+    private Memory memory = new Memory();
 
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public Memory getMemory() {
+        return memory;
+    }
+
+    public VertexFlowAiProperties setMemory(Memory memory) {
+        this.memory = memory;
+        return this;
     }
 
     public VertexFlowAiProperties setEnabled(boolean enabled) {
@@ -84,5 +94,39 @@ public class VertexFlowAiProperties {
     public VertexFlowAiProperties setConsoleLog(boolean consoleLog) {
         this.consoleLog = consoleLog;
         return this;
+    }
+
+    public static class Memory {
+
+        private boolean enabled = false;
+        private int maxMessages = 10;
+        private String conversationId = "default";
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public Memory setEnabled(boolean enabled) {
+            this.enabled = enabled;
+            return this;
+        }
+
+        public int getMaxMessages() {
+            return maxMessages;
+        }
+
+        public Memory setMaxMessages(int maxMessages) {
+            this.maxMessages = maxMessages;
+            return this;
+        }
+
+        public String getConversationId() {
+            return conversationId;
+        }
+
+        public Memory setConversationId(String conversationId) {
+            this.conversationId = conversationId;
+            return this;
+        }
     }
 }

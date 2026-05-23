@@ -18,4 +18,9 @@ public class ChatController {
     public String chat(@RequestParam("message") String message) {
         return aiClient.chat(message);
     }
+
+    @GetMapping("/memory-chat")
+    public String memoryChat(@RequestParam("message") String message) {
+        return aiClient.chat(message);
+    }
 }
