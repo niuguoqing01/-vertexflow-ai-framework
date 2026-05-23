@@ -15,6 +15,16 @@ public class VertexFlowAiProperties {
     private boolean consoleLog = false;
     private Memory memory = new Memory();
     private Rag rag = new Rag();
+    private Tool tool = new Tool();
+
+    public Tool getTool() {
+        return tool;
+    }
+
+    public VertexFlowAiProperties setTool(Tool tool) {
+        this.tool = tool;
+        return this;
+    }
 
     public Rag getRag() {
         return rag;
@@ -190,6 +200,30 @@ public class VertexFlowAiProperties {
 
         public Rag setOverlap(int overlap) {
             this.overlap = overlap;
+            return this;
+        }
+    }
+
+    public static class Tool {
+
+        private boolean enabled = false;
+        private int maxSteps = 10;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public Tool setEnabled(boolean enabled) {
+            this.enabled = enabled;
+            return this;
+        }
+
+        public int getMaxSteps() {
+            return maxSteps;
+        }
+
+        public Tool setMaxSteps(int maxSteps) {
+            this.maxSteps = maxSteps;
             return this;
         }
     }

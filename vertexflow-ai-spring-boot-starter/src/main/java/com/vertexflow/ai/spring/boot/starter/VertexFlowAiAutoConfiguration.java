@@ -21,12 +21,53 @@ import com.vertexflow.ai.rag.RagEngine;
 import com.vertexflow.ai.rag.RagOptions;
 import com.vertexflow.ai.rag.SimpleTextEmbedding;
 import com.vertexflow.ai.rag.VectorStore;
+import com.vertexflow.ai.core.tool.AiTool;
+import com.vertexflow.ai.core.tool.AgentOptions;
+import com.vertexflow.ai.core.tool.SimpleToolAgent;
+import com.vertexflow.ai.core.tool.ToolRegistry;
+import com.vertexflow.ai.model.openai.OpenAiToolCallParser;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.ApplicationContext;
+
+import java.lang.reflect.Method;
 
 @AutoConfiguration
 @ConditionalOnClass(AiClient.class)
 @EnableConfigurationProperties(VertexFlowAiProperties.class)
 @ConditionalOnProperty(prefix = "vertexflow.ai", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class VertexFlowAiAutoConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "vertexflow.ai.tool", name = "enabled", havingValue = "true")
+    public ToolRegistry toolRegistry() {
+        return new ToolRegistry();
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "vertexflow.ai.tool", name = "enabled", havingValue = "true")
+    public AiToolBeanPostProcessor aiToolBeanPostProcessor(ToolRegistry toolRegistry) {
+        return new AiToolBeanPostProcessor(toolRegistry);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "vertexflow.ai.tool", name = "enabled", havingValue = "true")
+    public SimpleToolAgent simpleToolAgent(
+            ChatModel chatModel,
+            ToolRegistry toolRegistry,
+            VertexFlowAiProperties properties
+    ) {
+        return SimpleToolAgent.builder()
+                .chatModel(chatModel)
+                .toolRegistry(toolRegistry)
+                .toolCallParser(new OpenAiToolCallParser())
+                .options(AgentOptions.builder()
+                        .maxSteps(properties.getTool().getMaxSteps())
+                        .returnSteps(true)
+                        .build())
+                .build();
+    }
 
     @Bean
     @ConditionalOnMissingBean
