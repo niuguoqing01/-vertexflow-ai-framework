@@ -76,7 +76,7 @@ public class SimpleToolAgent {
                     answer
             ));
 
-            return new AgentResponse(answer, steps);
+            return AgentResponse.success(answer, steps);
         }
 
         for (ToolCall toolCall : toolCalls) {

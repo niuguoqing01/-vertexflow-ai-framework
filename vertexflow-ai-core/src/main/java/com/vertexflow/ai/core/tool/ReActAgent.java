@@ -70,7 +70,7 @@ public class ReActAgent {
                         action.finalAnswer()
                 ));
 
-                return new AgentResponse(action.finalAnswer(), steps);
+                return AgentResponse.success(action.finalAnswer(), steps);
             }
 
             if (action.toolName() == null || action.toolName().isBlank()) {
@@ -113,7 +113,7 @@ public class ReActAgent {
                         finalAnswer
                 ));
 
-                return new AgentResponse(finalAnswer, steps);
+                return AgentResponse.success(finalAnswer, steps);
             }
 
             steps.add(new AgentStep(
@@ -125,27 +125,50 @@ public class ReActAgent {
 
             ToolResult toolResult = toolRegistry.execute(action.toolName(), action.arguments());
 
-            steps.add(new AgentStep(
-                    AgentStepType.TOOL_RESULT,
-                    action.toolName(),
-                    toolResult.success() ? toolResult.content() : toolResult.errorMessage(),
-                    toolResult
-            ));
+            if (toolResult.success()) {
+                steps.add(new AgentStep(
+                        AgentStepType.TOOL_RESULT,
+                        action.toolName(),
+                        toolResult.content(),
+                        toolResult
+                ));
+            } else {
+                String errorContent = "Tool execution failed. errorCode="
+                        + toolResult.errorCode()
+                        + ", errorMessage="
+                        + toolResult.errorMessage();
+
+                steps.add(new AgentStep(
+                        AgentStepType.TOOL_ERROR,
+                        action.toolName(),
+                        errorContent,
+                        toolResult
+                ));
+            }
 
             scratchpad += "\n" + content;
-            scratchpad += "\nObservation: " + (toolResult.success() ? toolResult.content() : toolResult.errorMessage());
+            scratchpad += "\nObservation: " + (toolResult.success()
+                    ? toolResult.content()
+                    : "Tool failed: " + toolResult.errorMessage());
         }
 
         String answer = "Agent stopped because maxSteps was reached. maxSteps=" + options.getMaxSteps();
 
         steps.add(new AgentStep(
-                AgentStepType.FINAL_ANSWER,
+                AgentStepType.MAX_STEPS,
                 "max_steps_reached",
                 answer,
                 answer
         ));
 
-        return new AgentResponse(answer, steps);
+        steps.add(new AgentStep(
+                AgentStepType.FINAL_ANSWER,
+                "final_answer",
+                answer,
+                answer
+        ));
+
+        return AgentResponse.failure(answer, steps, AgentFailureReason.MAX_STEPS_REACHED);
     }
 
     private String systemPrompt() {

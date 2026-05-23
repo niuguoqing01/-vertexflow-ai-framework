@@ -152,7 +152,11 @@ public class ChatController {
         AgentResponse response = agent.run(message);
 
         StringBuilder builder = new StringBuilder();
-        builder.append("answer:\n")
+        builder.append("success:\n")
+                .append(response.success())
+                .append("\n\nfailureReason:\n")
+                .append(response.failureReason())
+                .append("\n\nanswer:\n")
                 .append(response.answer())
                 .append("\n\nsteps:\n");
 
@@ -180,7 +184,11 @@ public class ChatController {
         AgentResponse response = agent.run(message);
 
         StringBuilder builder = new StringBuilder();
-        builder.append("answer:\n")
+        builder.append("success:\n")
+                .append(response.success())
+                .append("\n\nfailureReason:\n")
+                .append(response.failureReason())
+                .append("\n\nanswer:\n")
                 .append(response.answer())
                 .append("\n\nsteps:\n");
 
