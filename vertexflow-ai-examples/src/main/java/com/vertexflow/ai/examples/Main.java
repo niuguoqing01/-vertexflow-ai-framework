@@ -46,6 +46,7 @@ import com.vertexflow.ai.rag.QdrantVectorStore;
 import com.vertexflow.ai.rag.PdfDocumentLoader;
 import com.vertexflow.ai.rag.UrlDocumentLoader;
 import com.vertexflow.ai.rag.AddDocumentResult;
+import com.vertexflow.ai.core.tool.ReActAgent;
 
 import java.util.List;
 import java.util.Map;
@@ -114,6 +115,7 @@ public class Main {
         testUrlDocumentLoader(model);
         testAddDocumentResult(model);
         testDeleteDocument(model);
+        testReActAgent(model);
     }
 
     private static void testPrompt() {
@@ -1090,5 +1092,34 @@ public class Main {
 
         RagAnswer afterDelete = rag.askWithSources("What does delete-doc support?");
         System.out.println("after delete sources size: " + afterDelete.sources().size());
+    }
+
+    private static void testReActAgent(ChatModel model) {
+        System.out.println();
+        System.out.println("[37] ReActAgent test");
+
+        ToolRegistry registry = new ToolRegistry();
+        registry.register(new DemoWeatherTool());
+
+        ReActAgent agent = ReActAgent.builder()
+                .chatModel(model)
+                .toolRegistry(registry)
+                .maxSteps(5)
+                .build();
+
+        AgentResponse response = agent.run(
+                "你必须先调用 getWeather 工具查询北京天气，然后用中文告诉我结果。"
+        );
+
+        System.out.println("answer:");
+        System.out.println(response.answer());
+
+        System.out.println();
+        System.out.println("steps:");
+        for (AgentStep step : response.steps()) {
+            System.out.println("- type: " + step.type());
+            System.out.println("  name: " + step.name());
+            System.out.println("  content: " + step.content());
+        }
     }
 }
