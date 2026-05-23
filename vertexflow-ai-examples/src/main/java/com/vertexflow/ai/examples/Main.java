@@ -34,6 +34,7 @@ import com.vertexflow.ai.core.chat.ChatRequest;
 import com.vertexflow.ai.core.chat.ChatResponse;
 import com.vertexflow.ai.core.exception.AiException;
 import com.vertexflow.ai.core.log.ConsoleAiCallLogger;
+import com.vertexflow.ai.core.memory.MemoryOptions;
 
 import java.util.List;
 import java.util.Map;
@@ -86,6 +87,7 @@ public class Main {
         testChatResponse(model);
         testAiException();
         testAiClientMemory(model);
+        testMemoryOptions();
     }
 
     private static void testPrompt() {
@@ -545,5 +547,39 @@ public class Main {
         System.out.println(answer2);
 
         System.out.println("memory size: " + memory.get("user-001").size());
+    }
+
+    private static void testMemoryOptions() {
+        System.out.println();
+        System.out.println("[21] MemoryOptions test");
+
+        WindowChatMemory memory = WindowChatMemory.builder()
+                .maxMessages(3)
+                .keepSystemMessage(false)
+                .build();
+
+        memory.add("memory-options-user", ChatMessage.user("message 1"));
+        memory.add("memory-options-user", ChatMessage.assistant("message 2"));
+        memory.add("memory-options-user", ChatMessage.user("message 3"));
+        memory.add("memory-options-user", ChatMessage.assistant("message 4"));
+
+        System.out.println("memory size: " + memory.get("memory-options-user").size());
+
+        for (ChatMessage message : memory.get("memory-options-user")) {
+            System.out.println(message);
+        }
+
+        WindowChatMemory memoryByOptions = new WindowChatMemory(
+                MemoryOptions.builder()
+                        .maxMessages(2)
+                        .keepSystemMessage(false)
+                        .build()
+        );
+
+        memoryByOptions.add("memory-options-user-2", ChatMessage.user("hello"));
+        memoryByOptions.add("memory-options-user-2", ChatMessage.assistant("hi"));
+        memoryByOptions.add("memory-options-user-2", ChatMessage.user("what is my first message?"));
+
+        System.out.println("memoryByOptions size: " + memoryByOptions.get("memory-options-user-2").size());
     }
 }
