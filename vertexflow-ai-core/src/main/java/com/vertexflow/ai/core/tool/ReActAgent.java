@@ -42,10 +42,10 @@ public class ReActAgent {
                 userMessage
         ));
 
-        String scratchpad = "";
+        ReActScratchpad scratchpad = new ReActScratchpad();
 
         for (int step = 1; step <= options.getMaxSteps(); step++) {
-            String prompt = buildPrompt(userMessage, scratchpad);
+            String prompt = buildPrompt(userMessage, scratchpad.render());
 
             ChatResponse response = chatModel.call(new ChatRequest()
                     .addMessage(ChatMessage.system(systemPrompt()))
@@ -98,8 +98,13 @@ public class ReActAgent {
                             content
                     ));
 
-                    scratchpad += "\n" + content;
-                    scratchpad += "\nObservation: " + formatError;
+                    scratchpad.addRawMessage(content);
+                    scratchpad.addStep(
+                            "模型输出格式不正确，需要按 ReAct 格式重试。",
+                            null,
+                            Map.of(),
+                            formatError
+                    );
 
                     continue;
                 }
@@ -134,8 +139,13 @@ public class ReActAgent {
                         action
                 ));
 
-                scratchpad += "\n" + content;
-                scratchpad += "\nObservation: " + errorContent;
+                scratchpad.addRawMessage(content);
+                scratchpad.addStep(
+                        extractLineValue(content, "Thought:"),
+                        action.toolName(),
+                        action.arguments(),
+                        errorContent
+                );
 
                 continue;
             }
@@ -170,10 +180,15 @@ public class ReActAgent {
                 ));
             }
 
-            scratchpad += "\n" + content;
-            scratchpad += "\nObservation: " + (toolResult.success()
-                    ? toolResult.content()
-                    : "Tool failed: " + toolResult.errorMessage());
+            scratchpad.addRawMessage(content);
+            scratchpad.addStep(
+                    extractLineValue(content, "Thought:"),
+                    action.toolName(),
+                    action.arguments(),
+                    toolResult.success()
+                            ? toolResult.content()
+                            : "Tool failed: " + toolResult.errorMessage()
+            );
         }
 
         String answer = "Agent stopped because maxSteps was reached. maxSteps=" + options.getMaxSteps();
