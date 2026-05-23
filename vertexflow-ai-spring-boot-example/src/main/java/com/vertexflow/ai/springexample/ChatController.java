@@ -1,39 +1,43 @@
 package com.vertexflow.ai.springexample;
 
 import com.vertexflow.ai.core.chat.AiClient;
+import com.vertexflow.ai.core.tool.AgentResponse;
+import com.vertexflow.ai.core.tool.AgentStep;
+import com.vertexflow.ai.core.tool.SimpleToolAgent;
 import com.vertexflow.ai.rag.Document;
 import com.vertexflow.ai.rag.RagAnswer;
 import com.vertexflow.ai.rag.RagEngine;
 import com.vertexflow.ai.rag.RagSource;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import com.vertexflow.ai.core.tool.AgentResponse;
-import com.vertexflow.ai.core.tool.AgentStep;
-import com.vertexflow.ai.core.tool.SimpleToolAgent;
-import org.springframework.beans.factory.ObjectProvider;
 
 @RestController
 public class ChatController {
 
     private final AiClient aiClient;
-    private final RagEngine ragEngine;
+    private final ObjectProvider<RagEngine> ragEngineProvider;
     private final ObjectProvider<SimpleToolAgent> simpleToolAgentProvider;
 
     public ChatController(
             AiClient aiClient,
-            RagEngine ragEngine,
+            ObjectProvider<RagEngine> ragEngineProvider,
             ObjectProvider<SimpleToolAgent> simpleToolAgentProvider
     ) {
         this.aiClient = aiClient;
-        this.ragEngine = ragEngine;
+        this.ragEngineProvider = ragEngineProvider;
         this.simpleToolAgentProvider = simpleToolAgentProvider;
 
-        this.ragEngine.addDocument(new Document("spring-demo-doc", """
-            VertexFlow AI Framework is a lightweight AI application development framework for Java developers.
-            It supports ChatModel, StreamingChatModel, AiClient, Memory, RAG, Tool Calling and Spring Boot Starter.
-            The Spring Boot Starter can automatically configure AiClient, RagEngine and SimpleToolAgent.
-            """));
+        RagEngine ragEngine = ragEngineProvider.getIfAvailable();
+
+        if (ragEngine != null) {
+            ragEngine.addDocument(new Document("spring-demo-doc", """
+                    VertexFlow AI Framework is a lightweight AI application development framework for Java developers.
+                    It supports ChatModel, StreamingChatModel, AiClient, Memory, RAG, Tool Calling and Spring Boot Starter.
+                    The Spring Boot Starter can automatically configure AiClient, RagEngine and SimpleToolAgent.
+                    """));
+        }
     }
 
     @GetMapping("/chat")
@@ -48,6 +52,12 @@ public class ChatController {
 
     @GetMapping("/rag")
     public String rag(@RequestParam("question") String question) {
+        RagEngine ragEngine = ragEngineProvider.getIfAvailable();
+
+        if (ragEngine == null) {
+            return "RagEngine is not enabled. Please set vertexflow.ai.rag.enabled=true";
+        }
+
         RagAnswer answer = ragEngine.askWithSources(question);
 
         StringBuilder builder = new StringBuilder();
