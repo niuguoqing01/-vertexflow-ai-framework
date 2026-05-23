@@ -143,6 +143,7 @@
 <header>
     <h1>🚀 VertexFlow AI Debug Dashboard</h1>
     <p>Chat · Memory · RAG · Agent · ReAct Trace</p>
+    <p style="color:#fbbf24;">⚠️ 本页面用于本地开发调试，不建议直接暴露到公网环境。</p>
 </header>
 
 <main>
@@ -222,15 +223,62 @@
 </main>
 
 <script>
+    function setLoading(elementId, message) {
+        document.getElementById(elementId).textContent = "⏳ " + message;
+    }
     async function requestText(url) {
-        const res = await fetch(url);
-        return await res.text();
+        try {
+            const res = await fetch(url);
+            const text = await res.text();
+
+            if (!res.ok) {
+                return formatError(url, res.status, text);
+            }
+
+            return text;
+        } catch (error) {
+            return formatClientError(url, error);
+        }
     }
 
     async function requestJson(url) {
-        const res = await fetch(url);
-        const data = await res.json();
-        return JSON.stringify(data, null, 2);
+        try {
+            const res = await fetch(url);
+            const text = await res.text();
+
+            if (!res.ok) {
+                return formatError(url, res.status, text);
+            }
+
+            try {
+                return JSON.stringify(JSON.parse(text), null, 2);
+            } catch (e) {
+                return text;
+            }
+        } catch (error) {
+            return formatClientError(url, error);
+        }
+    }
+
+    function formatError(url, status, body) {
+        return [
+            "❌ Request Failed",
+            "URL: " + url,
+            "Status: " + status,
+            "",
+            "Response:",
+            body
+        ].join("\n");
+    }
+
+    function formatClientError(url, error) {
+        return [
+            "❌ Client Error",
+            "URL: " + url,
+            "",
+            "Message:",
+            error && error.message ? error.message : String(error)
+        ].join("\n");
     }
 
     function encode(value) {
@@ -239,33 +287,39 @@
 
     async function chat() {
         const message = document.getElementById("chatMessage").value;
+        setLoading("chatResult", "正在请求 /chat ...");
         document.getElementById("chatResult").textContent =
             await requestText("/chat?message=" + encode(message));
     }
 
     async function memoryChat() {
         const message = document.getElementById("memoryMessage").value;
+        setLoading("memoryResult", "正在请求 Memory 接口 ...");
         document.getElementById("memoryResult").textContent =
             await requestText("/memory-chat?message=" + encode(message));
     }
 
     async function memoryAsk() {
+        setLoading("memoryResult", "正在请求 Memory 接口 ...");
         document.getElementById("memoryResult").textContent =
             await requestText("/memory-chat?message=" + encode("我叫什么，我正在开发什么项目？"));
     }
 
     async function memoryStatus() {
+        setLoading("memoryResult", "正在请求 Memory 接口 ...");
         document.getElementById("memoryResult").textContent =
             await requestJson("/memory/status/json");
     }
 
     async function memoryMessages() {
+        setLoading("memoryResult", "正在请求 Memory 接口 ...");
         const conversationId = document.getElementById("conversationId").value;
         document.getElementById("memoryResult").textContent =
             await requestJson("/memory/messages/json?conversationId=" + encode(conversationId));
     }
 
     async function memoryClear() {
+        setLoading("memoryResult", "正在请求 Memory 接口 ...");
         const conversationId = document.getElementById("conversationId").value;
         document.getElementById("memoryResult").textContent =
             await requestJson("/memory/clear/json?conversationId=" + encode(conversationId));
@@ -273,21 +327,25 @@
 
     async function ragAsk() {
         const question = document.getElementById("ragQuestion").value;
+        setLoading("ragResult", "正在请求 RAG 接口 ...");
         document.getElementById("ragResult").textContent =
             await requestText("/rag?question=" + encode(question));
     }
 
     async function ragStatus() {
+        setLoading("ragResult", "正在请求 RAG 接口 ...");
         document.getElementById("ragResult").textContent =
             await requestJson("/rag/status/json");
     }
 
     async function ragReload() {
+        setLoading("ragResult", "正在请求 RAG 接口 ...");
         document.getElementById("ragResult").textContent =
             await requestJson("/rag/reload/json");
     }
 
     async function ragDelete() {
+        setLoading("ragResult", "正在请求 RAG 接口 ...");
         const documentId = document.getElementById("documentId").value;
         document.getElementById("ragResult").textContent =
             await requestJson("/rag/delete/json?documentId=" + encode(documentId));
@@ -295,18 +353,21 @@
 
     async function simpleAgent() {
         const message = document.getElementById("agentMessage").value;
+        setLoading("agentResult", "正在请求 Agent 接口 ...");
         document.getElementById("agentResult").textContent =
             await requestJson("/agent/json?message=" + encode(message));
     }
 
     async function reactAgent() {
         const message = document.getElementById("agentMessage").value;
+        setLoading("agentResult", "正在请求 Agent 接口 ...");
         document.getElementById("agentResult").textContent =
             await requestJson("/agent/react/json?message=" + encode(message));
     }
 
     async function reactTrace() {
         const message = document.getElementById("agentMessage").value;
+        setLoading("agentResult", "正在请求 Agent 接口 ...");
         document.getElementById("agentResult").textContent =
             await requestJson("/agent/react/trace?message=" + encode(message));
     }
@@ -314,7 +375,7 @@
     async function healthCheck() {
         const memory = await requestJson("/memory/status/json");
         const rag = await requestJson("/rag/status/json");
-
+        setLoading("healthResult", "正在检查状态 ...");
         document.getElementById("healthResult").textContent =
             "Memory Status:\n" + memory + "\n\nRAG Status:\n" + rag;
     }
