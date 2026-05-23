@@ -48,6 +48,7 @@ import com.vertexflow.ai.rag.UrlDocumentLoader;
 import com.vertexflow.ai.rag.AddDocumentResult;
 import com.vertexflow.ai.core.tool.ReActAgent;
 import com.vertexflow.ai.core.tool.ReActAgentOptions;
+import com.vertexflow.ai.core.tool.AgentTraceJsonExporter;
 
 import java.util.List;
 import java.util.Map;
@@ -124,6 +125,7 @@ public class Main {
         testReActAgentFailureInference(model);
         testReActScratchpad(model);
         testReActScratchpadJsonRender();
+        testAgentTraceJsonExporter(model);
     }
 
     private static void testPrompt() {
@@ -1373,5 +1375,34 @@ public class Main {
         String rendered = scratchpad.render();
 
         System.out.println(rendered);
+    }
+    private static void testAgentTraceJsonExporter(ChatModel model) {
+        System.out.println();
+        System.out.println("[45] AgentTraceJsonExporter test");
+
+        ToolRegistry registry = new ToolRegistry();
+        registry.register(new DemoWeatherTool());
+
+        ReActAgent agent = ReActAgent.builder()
+                .chatModel(model)
+                .toolRegistry(registry)
+                .options(ReActAgentOptions.builder()
+                        .maxSteps(6)
+                        .returnSteps(true)
+                        .allowJsonActionInput(true)
+                        .retryOnFormatError(true)
+                        .build())
+                .build();
+
+        AgentResponse response = agent.run("""
+            严格按照 ReAct 格式执行。
+            你必须先调用 getWeather 工具查询北京天气。
+            Action Input 使用 JSON：{"city":"Beijing"}
+            然后用中文回答。
+            """);
+
+        String json = AgentTraceJsonExporter.create().toJson(response);
+
+        System.out.println(json);
     }
 }

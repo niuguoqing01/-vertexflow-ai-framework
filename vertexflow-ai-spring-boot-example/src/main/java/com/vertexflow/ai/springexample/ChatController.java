@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.vertexflow.ai.spring.boot.starter.RagDocumentAutoLoader;
 import com.vertexflow.ai.core.tool.ReActAgent;
+import com.vertexflow.ai.core.tool.AgentTraceJsonExporter;
 
 @RestController
 public class ChatController {
@@ -203,5 +204,25 @@ public class ChatController {
         }
 
         return builder.toString();
+    }
+
+    @GetMapping(value = "/agent/react/trace", produces = "application/json;charset=UTF-8")
+    public String reactAgentTrace(@RequestParam("message") String message) {
+        ReActAgent agent = reActAgentProvider.getIfAvailable();
+
+        if (agent == null) {
+            return """
+                {
+                  "success": false,
+                  "failureReason": "REACT_AGENT_NOT_ENABLED",
+                  "answer": "ReActAgent is not enabled. Please set vertexflow.ai.tool.enabled=true and vertexflow.ai.tool.react-enabled=true",
+                  "steps": []
+                }
+                """;
+        }
+
+        AgentResponse response = agent.run(message);
+
+        return AgentTraceJsonExporter.create().toJson(response);
     }
 }
