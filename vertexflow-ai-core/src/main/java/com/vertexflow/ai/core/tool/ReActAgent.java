@@ -116,6 +116,30 @@ public class ReActAgent {
                 return AgentResponse.success(finalAnswer, steps);
             }
 
+            if (!toolRegistry.contains(action.toolName())) {
+                String errorContent = """
+            TOOL_NOT_FOUND:
+            Tool does not exist: %s
+
+            Available tools:
+            %s
+
+            Please choose one available tool and continue with correct ReAct format.
+            """.formatted(action.toolName(), toolDescriptions());
+
+                steps.add(new AgentStep(
+                        AgentStepType.TOOL_ERROR,
+                        action.toolName(),
+                        errorContent,
+                        action
+                ));
+
+                scratchpad += "\n" + content;
+                scratchpad += "\nObservation: " + errorContent;
+
+                continue;
+            }
+
             steps.add(new AgentStep(
                     AgentStepType.TOOL_CALL,
                     action.toolName(),

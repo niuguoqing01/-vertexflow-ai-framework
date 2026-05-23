@@ -60,6 +60,14 @@ public class ToolRegistry {
         return definition;
     }
 
+    public boolean contains(String name) {
+        if (name == null || name.isBlank()) {
+            return false;
+        }
+
+        return tools.containsKey(name);
+    }
+
     public List<ToolDefinition> list() {
         return new ArrayList<>(tools.values());
     }

@@ -120,6 +120,7 @@ public class Main {
         testReActAgentJsonInput(model);
         testReActAgentFormatRecovery(model);
         testReActAgentFailureReason(model);
+        testReActAgentToolNotFound(model);
     }
 
     private static void testPrompt() {
@@ -1220,6 +1221,45 @@ public class Main {
         AgentResponse response = agent.run("""
             严格按照 ReAct 格式执行。
             你必须调用 getWeather 工具查询北京天气，然后回答。
+            """);
+
+        System.out.println("success: " + response.success());
+        System.out.println("failureReason: " + response.failureReason());
+        System.out.println("answer:");
+        System.out.println(response.answer());
+
+        System.out.println();
+        System.out.println("steps:");
+        for (AgentStep step : response.steps()) {
+            System.out.println("- type: " + step.type());
+            System.out.println("  name: " + step.name());
+            System.out.println("  content: " + step.content());
+        }
+    }
+
+    private static void testReActAgentToolNotFound(ChatModel model) {
+        System.out.println();
+        System.out.println("[41] ReActAgent Tool Not Found test");
+
+        ToolRegistry registry = new ToolRegistry();
+        registry.register(new DemoWeatherTool());
+
+        ReActAgent agent = ReActAgent.builder()
+                .chatModel(model)
+                .toolRegistry(registry)
+                .options(ReActAgentOptions.builder()
+                        .maxSteps(6)
+                        .returnSteps(true)
+                        .allowJsonActionInput(true)
+                        .retryOnFormatError(true)
+                        .build())
+                .build();
+
+        AgentResponse response = agent.run("""
+            严格按照 ReAct 格式执行。
+            你需要查询北京天气。
+            如果你发现工具不存在，请根据可用工具列表修正。
+            最终用中文回答。
             """);
 
         System.out.println("success: " + response.success());
