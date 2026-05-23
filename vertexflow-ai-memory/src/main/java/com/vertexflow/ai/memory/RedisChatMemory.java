@@ -1,6 +1,5 @@
 package com.vertexflow.ai.memory;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vertexflow.ai.core.chat.ChatMessage;
 import com.vertexflow.ai.core.memory.ChatMemory;
@@ -15,12 +14,26 @@ public class RedisChatMemory implements ChatMemory {
     private final JedisPool jedisPool;
     private final String keyPrefix;
     private final int maxMessages;
+    private final int ttlSeconds;
+    private final int database;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private RedisChatMemory(Builder builder) {
-        this.jedisPool = new JedisPool(builder.host, builder.port);
+        if (builder.password != null && !builder.password.isBlank()) {
+            this.jedisPool = new JedisPool(
+                    new redis.clients.jedis.JedisPoolConfig(),
+                    builder.host,
+                    builder.port,
+                    2000,
+                    builder.password
+            );
+        } else {
+            this.jedisPool = new JedisPool(builder.host, builder.port);
+        }
         this.keyPrefix = builder.keyPrefix;
         this.maxMessages = builder.maxMessages;
+        this.ttlSeconds = builder.ttlSeconds;
+        this.database = builder.database;
     }
 
     public static Builder builder() {
@@ -36,8 +49,9 @@ public class RedisChatMemory implements ChatMemory {
         String key = buildKey(conversationId);
 
         try (Jedis jedis = jedisPool.getResource()) {
-            List<String> values = jedis.lrange(key, 0, -1);
+            selectDatabase(jedis);
 
+            List<String> values = jedis.lrange(key, 0, -1);
             List<ChatMessage> messages = new ArrayList<>();
 
             for (String value : values) {
@@ -59,10 +73,16 @@ public class RedisChatMemory implements ChatMemory {
         String key = buildKey(conversationId);
 
         try (Jedis jedis = jedisPool.getResource()) {
+            selectDatabase(jedis);
+
             String json = objectMapper.writeValueAsString(message);
 
             jedis.rpush(key, json);
             jedis.ltrim(key, Math.max(0, -maxMessages), -1);
+
+            if (ttlSeconds > 0) {
+                jedis.expire(key, ttlSeconds);
+            }
         } catch (Exception e) {
             throw new IllegalStateException("Failed to add Redis chat memory", e);
         }
@@ -75,7 +95,14 @@ public class RedisChatMemory implements ChatMemory {
         }
 
         try (Jedis jedis = jedisPool.getResource()) {
+            selectDatabase(jedis);
             jedis.del(buildKey(conversationId));
+        }
+    }
+
+    private void selectDatabase(Jedis jedis) {
+        if (database > 0) {
+            jedis.select(database);
         }
     }
 
@@ -87,8 +114,11 @@ public class RedisChatMemory implements ChatMemory {
 
         private String host = "localhost";
         private int port = 6379;
+        private String password;
+        private int database = 0;
         private String keyPrefix = "vertexflow:chat-memory";
         private int maxMessages = 20;
+        private int ttlSeconds = 0;
 
         public Builder host(String host) {
             this.host = host;
@@ -100,6 +130,16 @@ public class RedisChatMemory implements ChatMemory {
             return this;
         }
 
+        public Builder password(String password) {
+            this.password = password;
+            return this;
+        }
+
+        public Builder database(int database) {
+            this.database = database;
+            return this;
+        }
+
         public Builder keyPrefix(String keyPrefix) {
             this.keyPrefix = keyPrefix;
             return this;
@@ -107,6 +147,11 @@ public class RedisChatMemory implements ChatMemory {
 
         public Builder maxMessages(int maxMessages) {
             this.maxMessages = maxMessages;
+            return this;
+        }
+
+        public Builder ttlSeconds(int ttlSeconds) {
+            this.ttlSeconds = ttlSeconds;
             return this;
         }
 

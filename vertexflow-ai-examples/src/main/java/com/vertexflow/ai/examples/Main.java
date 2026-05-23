@@ -1415,7 +1415,9 @@ public class Main {
         RedisChatMemory memory = RedisChatMemory.builder()
                 .host("localhost")
                 .port(6379)
+                .database(0)
                 .keyPrefix("vertexflow:test:memory")
+                .ttlSeconds(3600)
                 .maxMessages(10)
                 .build();
 

@@ -514,6 +514,48 @@ public class VertexFlowAiProperties {
          */
         private String keyPrefix = "vertexflow:chat-memory";
 
+        /**
+         * Redis password.
+         */
+        private String password;
+
+        /**
+         * Redis database index.
+         */
+        private int database = 0;
+
+        /**
+         * Redis key ttl seconds. 0 means never expire.
+         */
+        private int ttlSeconds = 0;
+
+        public String getPassword() {
+            return password;
+        }
+
+        public Redis setPassword(String password) {
+            this.password = password;
+            return this;
+        }
+
+        public int getDatabase() {
+            return database;
+        }
+
+        public Redis setDatabase(int database) {
+            this.database = database;
+            return this;
+        }
+
+        public int getTtlSeconds() {
+            return ttlSeconds;
+        }
+
+        public Redis setTtlSeconds(int ttlSeconds) {
+            this.ttlSeconds = ttlSeconds;
+            return this;
+        }
+
         public String getHost() {
             return host;
         }

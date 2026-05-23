@@ -181,7 +181,10 @@ public class VertexFlowAiAutoConfiguration {
             return RedisChatMemory.builder()
                     .host(properties.getMemory().getRedis().getHost())
                     .port(properties.getMemory().getRedis().getPort())
+                    .password(properties.getMemory().getRedis().getPassword())
+                    .database(properties.getMemory().getRedis().getDatabase())
                     .keyPrefix(properties.getMemory().getRedis().getKeyPrefix())
+                    .ttlSeconds(properties.getMemory().getRedis().getTtlSeconds())
                     .maxMessages(properties.getMemory().getMaxMessages())
                     .build();
         }

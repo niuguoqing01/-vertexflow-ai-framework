@@ -19,14 +19,17 @@ vertexflow:
 
     memory:
       enabled: true
-#      type: window：走本地窗口记忆，redis：走redis记忆
+      #      type: window：走本地窗口记忆，redis：走redis记忆
       type: redis
       max-messages: 20
       conversation-id: spring-redis-user
       redis:
         host: localhost
         port: 6379
+        password:
+        database: 0
         key-prefix: vertexflow:chat-memory
+        ttl-seconds: 86400
 
     rag:
       enabled: true
