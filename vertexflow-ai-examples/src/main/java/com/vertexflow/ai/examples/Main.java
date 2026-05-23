@@ -28,6 +28,7 @@ import com.vertexflow.ai.rag.DocumentSplitter;
 import com.vertexflow.ai.rag.DocumentChunk;
 import com.vertexflow.ai.rag.MarkdownDocumentSplitter;
 import com.vertexflow.ai.rag.RagBuilder;
+import com.vertexflow.ai.core.VertexFlowAi;
 
 import java.util.List;
 import java.util.Map;
@@ -72,6 +73,8 @@ public class Main {
         testMarkdownDocumentSplitter();
         testRagWithMarkdownSplitter(model);
         testRagBuilder(model);
+        testAiClientBuilder(model);
+        testAiClientStreaming(model);
     }
 
     private static void testPrompt() {
@@ -417,5 +420,39 @@ public class Main {
             System.out.println("  score: " + source.score());
             System.out.println("  content: " + source.content());
         }
+    }
+
+    private static void testAiClientBuilder(ChatModel model) {
+        System.out.println();
+        System.out.println("[15] AiClient Builder test");
+
+        AiClient client = AiClient.builder()
+                .chatModel(model)
+                .system("You are the technical assistant of VertexFlow AI Framework. Answer briefly.")
+                .build();
+
+        String answer = client.chat("What is AiClient Builder?");
+
+        System.out.println("answer:");
+        System.out.println(answer);
+    }
+
+    private static void testAiClientStreaming(ChatModel model) {
+        System.out.println();
+        System.out.println("[16] AiClient Streaming test");
+
+        AiClient client = VertexFlowAi.clientBuilder()
+                .chatModel(model)
+                .system("You are the streaming assistant of VertexFlow AI Framework. Answer briefly.")
+                .build();
+
+        client.stream("Introduce streaming chat in one short paragraph.", response -> {
+            System.out.print(response.content());
+
+            if (response.finished()) {
+                System.out.println();
+                System.out.println("[client stream finished]");
+            }
+        });
     }
 }
