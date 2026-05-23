@@ -140,7 +140,7 @@ public class VertexFlowAiAutoConfiguration {
     ) {
         AiClient.Builder builder = AiClient.builder()
                 .chatModel(chatModel)
-                .system("You are VertexFlow AI assistant.");
+                .system("你是 VertexFlow AI Framework 的中文 AI 助手，请优先使用中文回答。");
 
         ChatMemory chatMemory = chatMemoryProvider.getIfAvailable();
 

@@ -5,47 +5,63 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "vertexflow.ai")
 public class VertexFlowAiProperties {
 
+    /**
+     * Whether VertexFlow AI auto configuration is enabled.
+     */
     private boolean enabled = true;
+
+    /**
+     * AI provider name. Current default is openai-compatible.
+     */
     private String provider = "openai-compatible";
+
+    /**
+     * API key for the AI provider.
+     */
     private String apiKey;
+
+    /**
+     * Base URL for OpenAI-compatible API.
+     */
     private String baseUrl = "https://api.openai.com/v1";
+
+    /**
+     * Chat model name.
+     */
     private String model = "gpt-4o-mini";
+
+    /**
+     * Sampling temperature.
+     */
     private Double temperature = 0.7;
+
+    /**
+     * Maximum output tokens.
+     */
     private Integer maxTokens = 2048;
+
+    /**
+     * Whether to print AI call logs to console.
+     */
     private boolean consoleLog = false;
+
+    /**
+     * Memory configuration.
+     */
     private Memory memory = new Memory();
+
+    /**
+     * RAG configuration.
+     */
     private Rag rag = new Rag();
+
+    /**
+     * Tool calling configuration.
+     */
     private Tool tool = new Tool();
-
-    public Tool getTool() {
-        return tool;
-    }
-
-    public VertexFlowAiProperties setTool(Tool tool) {
-        this.tool = tool;
-        return this;
-    }
-
-    public Rag getRag() {
-        return rag;
-    }
-
-    public VertexFlowAiProperties setRag(Rag rag) {
-        this.rag = rag;
-        return this;
-    }
 
     public boolean isEnabled() {
         return enabled;
-    }
-
-    public Memory getMemory() {
-        return memory;
-    }
-
-    public VertexFlowAiProperties setMemory(Memory memory) {
-        this.memory = memory;
-        return this;
     }
 
     public VertexFlowAiProperties setEnabled(boolean enabled) {
@@ -116,10 +132,48 @@ public class VertexFlowAiProperties {
         return this;
     }
 
+    public Memory getMemory() {
+        return memory;
+    }
+
+    public VertexFlowAiProperties setMemory(Memory memory) {
+        this.memory = memory;
+        return this;
+    }
+
+    public Rag getRag() {
+        return rag;
+    }
+
+    public VertexFlowAiProperties setRag(Rag rag) {
+        this.rag = rag;
+        return this;
+    }
+
+    public Tool getTool() {
+        return tool;
+    }
+
+    public VertexFlowAiProperties setTool(Tool tool) {
+        this.tool = tool;
+        return this;
+    }
+
     public static class Memory {
 
+        /**
+         * Whether chat memory is enabled.
+         */
         private boolean enabled = false;
+
+        /**
+         * Maximum messages kept in memory.
+         */
         private int maxMessages = 10;
+
+        /**
+         * Conversation id used by default AiClient.
+         */
         private String conversationId = "default";
 
         public boolean isEnabled() {
@@ -152,10 +206,29 @@ public class VertexFlowAiProperties {
 
     public static class Rag {
 
+        /**
+         * Whether RAG engine is enabled.
+         */
         private boolean enabled = false;
+
+        /**
+         * Top K documents to retrieve.
+         */
         private int topK = 3;
+
+        /**
+         * Whether RAG answer should return source chunks.
+         */
         private boolean returnSources = true;
+
+        /**
+         * Document chunk size.
+         */
         private int chunkSize = 300;
+
+        /**
+         * Chunk overlap size.
+         */
         private int overlap = 50;
 
         public boolean isEnabled() {
@@ -206,7 +279,14 @@ public class VertexFlowAiProperties {
 
     public static class Tool {
 
+        /**
+         * Whether tool calling is enabled.
+         */
         private boolean enabled = false;
+
+        /**
+         * Maximum agent execution steps.
+         */
         private int maxSteps = 10;
 
         public boolean isEnabled() {
