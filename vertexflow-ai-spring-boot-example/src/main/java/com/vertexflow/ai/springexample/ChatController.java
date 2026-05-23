@@ -19,6 +19,11 @@ import com.vertexflow.ai.core.chat.ChatMessage;
 import com.vertexflow.ai.core.memory.ChatMemory;
 import com.vertexflow.ai.core.chat.ChatMessage;
 import com.vertexflow.ai.core.memory.ChatMemory;
+import com.vertexflow.ai.core.tool.AgentResponse;
+import com.vertexflow.ai.core.tool.AgentStep;
+import com.vertexflow.ai.core.tool.ReActAgent;
+import com.vertexflow.ai.core.tool.SimpleToolAgent;
+import java.util.List;
 import java.util.List;
 
 import java.util.List;
@@ -48,7 +53,19 @@ public class ChatController {
         this.reActAgentProvider = reActAgentProvider;
         this.chatMemoryProvider = chatMemoryProvider;
     }
+    private List<AgentStepResponse> toAgentStepResponses(List<AgentStep> steps) {
+        if (steps == null) {
+            return List.of();
+        }
 
+        return steps.stream()
+                .map(step -> new AgentStepResponse(
+                        step.type() == null ? null : step.type().name(),
+                        step.name(),
+                        step.content()
+                ))
+                .toList();
+    }
     @GetMapping("/rag/reload")
     public String reloadRag() {
         RagDocumentAutoLoader loader = ragDocumentAutoLoaderProvider.getIfAvailable();
@@ -433,6 +450,62 @@ public class ChatController {
                 documentId,
                 deleted,
                 "RAG document delete finished"
+        );
+    }
+
+    @GetMapping(value = "/agent/json", produces = "application/json;charset=UTF-8")
+    public AgentRunResponse agentJson(@RequestParam("message") String message) {
+        SimpleToolAgent agent = simpleToolAgentProvider.getIfAvailable();
+
+        if (agent == null) {
+            return new AgentRunResponse(
+                    false,
+                    false,
+                    "SIMPLE_TOOL_AGENT_NOT_ENABLED",
+                    "SimpleToolAgent is not enabled. Please set vertexflow.ai.tool.enabled=true",
+                    0,
+                    List.of()
+            );
+        }
+
+        AgentResponse response = agent.run(message);
+        List<AgentStepResponse> steps = toAgentStepResponses(response.steps());
+
+        return new AgentRunResponse(
+                true,
+                response.success(),
+                response.failureReason() == null ? null : response.failureReason().name(),
+                response.answer(),
+                steps.size(),
+                steps
+        );
+    }
+
+    @GetMapping(value = "/agent/react/json", produces = "application/json;charset=UTF-8")
+    public AgentRunResponse reactAgentJson(@RequestParam("message") String message) {
+        ReActAgent agent = reActAgentProvider.getIfAvailable();
+
+        if (agent == null) {
+            return new AgentRunResponse(
+                    false,
+                    false,
+                    "REACT_AGENT_NOT_ENABLED",
+                    "ReActAgent is not enabled. Please set vertexflow.ai.tool.enabled=true and vertexflow.ai.tool.react-enabled=true",
+                    0,
+                    List.of()
+            );
+        }
+
+        AgentResponse response = agent.run(message);
+        List<AgentStepResponse> steps = toAgentStepResponses(response.steps());
+
+        return new AgentRunResponse(
+                true,
+                response.success(),
+                response.failureReason() == null ? null : response.failureReason().name(),
+                response.answer(),
+                steps.size(),
+                steps
         );
     }
 }
