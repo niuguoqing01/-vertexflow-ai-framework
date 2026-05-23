@@ -121,6 +121,7 @@ public class Main {
         testReActAgentFormatRecovery(model);
         testReActAgentFailureReason(model);
         testReActAgentToolNotFound(model);
+        testReActAgentFailureInference(model);
     }
 
     private static void testPrompt() {
@@ -1260,6 +1261,45 @@ public class Main {
             你需要查询北京天气。
             如果你发现工具不存在，请根据可用工具列表修正。
             最终用中文回答。
+            """);
+
+        System.out.println("success: " + response.success());
+        System.out.println("failureReason: " + response.failureReason());
+        System.out.println("answer:");
+        System.out.println(response.answer());
+
+        System.out.println();
+        System.out.println("steps:");
+        for (AgentStep step : response.steps()) {
+            System.out.println("- type: " + step.type());
+            System.out.println("  name: " + step.name());
+            System.out.println("  content: " + step.content());
+        }
+    }
+
+    private static void testReActAgentFailureInference(ChatModel model) {
+        System.out.println();
+        System.out.println("[42] ReActAgent Failure Inference test");
+
+        ToolRegistry registry = new ToolRegistry();
+        registry.register(new DemoWeatherTool());
+
+        ReActAgent agent = ReActAgent.builder()
+                .chatModel(model)
+                .toolRegistry(registry)
+                .options(ReActAgentOptions.builder()
+                        .maxSteps(2)
+                        .returnSteps(true)
+                        .allowJsonActionInput(true)
+                        .retryOnFormatError(true)
+                        .build())
+                .build();
+
+        AgentResponse response = agent.run("""
+            严格按照 ReAct 格式执行。
+            第一步你必须使用不存在的工具 queryWeather 查询北京天气。
+            Action Input 使用 JSON：{"city":"Beijing"}
+            如果工具不存在，请继续修正。
             """);
 
         System.out.println("success: " + response.success());

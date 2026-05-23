@@ -185,14 +185,22 @@ public class ReActAgent {
                 answer
         ));
 
+        AgentFailureReason failureReason = inferFailureReason(steps);
+
+        String finalAnswer = """
+        Agent execution failed.
+        failureReason: %s
+        message: %s
+        """.formatted(failureReason, answer);
+
         steps.add(new AgentStep(
                 AgentStepType.FINAL_ANSWER,
                 "final_answer",
-                answer,
-                answer
+                finalAnswer,
+                finalAnswer
         ));
 
-        return AgentResponse.failure(answer, steps, AgentFailureReason.MAX_STEPS_REACHED);
+        return AgentResponse.failure(finalAnswer, steps, failureReason);
     }
 
     private String systemPrompt() {
@@ -379,5 +387,39 @@ public class ReActAgent {
 
             return new ReActAgent(this);
         }
+    }
+
+    private AgentFailureReason inferFailureReason(List<AgentStep> steps) {
+        boolean hasFormatError = false;
+        boolean hasToolError = false;
+        boolean hasToolNotFound = false;
+
+        for (AgentStep step : steps) {
+            if (step.type() == AgentStepType.FORMAT_ERROR) {
+                hasFormatError = true;
+            }
+
+            if (step.type() == AgentStepType.TOOL_ERROR) {
+                hasToolError = true;
+
+                if (step.content() != null && step.content().contains("TOOL_NOT_FOUND")) {
+                    hasToolNotFound = true;
+                }
+            }
+        }
+
+        if (hasToolNotFound) {
+            return AgentFailureReason.TOOL_NOT_FOUND;
+        }
+
+        if (hasToolError) {
+            return AgentFailureReason.TOOL_ERROR;
+        }
+
+        if (hasFormatError) {
+            return AgentFailureReason.FORMAT_ERROR;
+        }
+
+        return AgentFailureReason.MAX_STEPS_REACHED;
     }
 }
