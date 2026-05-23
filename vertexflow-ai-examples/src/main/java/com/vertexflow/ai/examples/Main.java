@@ -22,7 +22,9 @@ import com.vertexflow.ai.rag.RagAnswer;
 import com.vertexflow.ai.rag.RagOptions;
 import com.vertexflow.ai.rag.RagSource;
 import com.vertexflow.ai.rag.TextFileDocumentLoader;
+import com.vertexflow.ai.rag.DirectoryDocumentLoader;
 
+import java.util.List;
 import java.util.Map;
 
 public class Main {
@@ -60,6 +62,7 @@ public class Main {
         testRag(model);
         testRagWithSources(model);
         testDocumentLoader(model);
+        testDirectoryDocumentLoader(model);
     }
 
     private static void testPrompt() {
@@ -222,6 +225,38 @@ public class Main {
 
         RagAnswer answer = rag.askWithSources("What capabilities does VertexFlow AI Framework provide?");
 
+        System.out.println("answer:");
+        System.out.println(answer.content());
+
+        System.out.println();
+        System.out.println("sources:");
+        for (RagSource source : answer.sources()) {
+            System.out.println("- documentId: " + source.documentId());
+            System.out.println("  score: " + source.score());
+            System.out.println("  content: " + source.content());
+        }
+    }
+
+    private static void testDirectoryDocumentLoader(ChatModel model) {
+        System.out.println();
+        System.out.println("[10] DirectoryDocumentLoader test");
+
+        RagEngine rag = new RagEngine(model);
+
+        List<Document> documents = DirectoryDocumentLoader.loadDirectory(
+                "vertexflow-ai-examples/src/main/resources/doc"
+        );
+
+        System.out.println("loaded documents: " + documents.size());
+
+        for (Document document : documents) {
+            System.out.println("- " + document.id());
+            rag.addDocument(document);
+        }
+
+        RagAnswer answer = rag.askWithSources("How does VertexFlow AI Framework use RAG?");
+
+        System.out.println();
         System.out.println("answer:");
         System.out.println(answer.content());
 
