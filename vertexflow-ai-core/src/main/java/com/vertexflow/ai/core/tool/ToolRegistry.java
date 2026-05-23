@@ -175,4 +175,17 @@ public class ToolRegistry {
 
         return "object";
     }
+    public List<Map<String, Object>> schemas() {
+        return tools.values()
+                .stream()
+                .map(ToolSchemaGenerator::toSchema)
+                .toList();
+    }
+
+    public List<Map<String, Object>> openAiToolSchemas() {
+        return tools.values()
+                .stream()
+                .map(ToolSchemaGenerator::toOpenAiToolSchema)
+                .toList();
+    }
 }

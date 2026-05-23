@@ -38,6 +38,7 @@ import com.vertexflow.ai.core.memory.MemoryOptions;
 import com.vertexflow.ai.core.tool.ToolDefinition;
 import com.vertexflow.ai.core.tool.ToolRegistry;
 import com.vertexflow.ai.core.tool.ToolResult;
+import com.vertexflow.ai.core.tool.ToolSchemaGenerator;
 
 import java.util.List;
 import java.util.Map;
@@ -92,6 +93,7 @@ public class Main {
         testAiClientMemory(model);
         testMemoryOptions();
         testToolCalling();
+        testToolSchema();
     }
 
     private static void testPrompt() {
@@ -615,5 +617,29 @@ public class Main {
 
         System.out.println("sum result:");
         System.out.println(sumResult.content());
+    }
+
+    private static void testToolSchema() {
+        System.out.println();
+        System.out.println("[23] Tool Schema test");
+
+        ToolRegistry registry = new ToolRegistry();
+        registry.register(new DemoWeatherTool());
+
+        System.out.println("basic schemas:");
+        for (Map<String, Object> schema : registry.schemas()) {
+            System.out.println(schema);
+        }
+
+        System.out.println();
+        System.out.println("openai tool schemas:");
+        for (Map<String, Object> schema : registry.openAiToolSchemas()) {
+            System.out.println(schema);
+        }
+
+        ToolDefinition definition = registry.get("getWeather");
+        System.out.println();
+        System.out.println("single tool schema:");
+        System.out.println(ToolSchemaGenerator.toSchema(definition));
     }
 }
