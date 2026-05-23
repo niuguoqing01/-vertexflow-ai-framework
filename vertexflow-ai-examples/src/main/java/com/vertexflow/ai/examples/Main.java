@@ -26,6 +26,7 @@ import com.vertexflow.ai.rag.DirectoryDocumentLoader;
 import com.vertexflow.ai.rag.FixedSizeDocumentSplitter;
 import com.vertexflow.ai.rag.DocumentSplitter;
 import com.vertexflow.ai.rag.DocumentChunk;
+import com.vertexflow.ai.rag.MarkdownDocumentSplitter;
 
 import java.util.List;
 import java.util.Map;
@@ -67,6 +68,8 @@ public class Main {
         testDocumentLoader(model);
         testDirectoryDocumentLoader(model);
         testDocumentSplitter();
+        testMarkdownDocumentSplitter();
+        testRagWithMarkdownSplitter(model);
     }
 
     private static void testPrompt() {
@@ -288,6 +291,88 @@ public class Main {
         for (DocumentChunk chunk : splitter.split(document)) {
             System.out.println("- chunkId: " + chunk.id());
             System.out.println("  content: " + chunk.content());
+        }
+    }
+
+    private static void testMarkdownDocumentSplitter() {
+        System.out.println();
+        System.out.println("[12] MarkdownDocumentSplitter test");
+
+        DocumentSplitter splitter = new MarkdownDocumentSplitter(200, 40);
+
+        Document document = new Document("markdown-doc-1", """
+            # VertexFlow AI Framework
+
+            VertexFlow AI Framework is a lightweight AI application development framework for Java developers.
+
+            ## ChatModel
+
+            ChatModel provides unified model calling for OpenAI-compatible APIs, DeepSeek, Qwen and other LLM providers.
+
+            ## StreamingChatModel
+
+            StreamingChatModel provides streaming output, allowing AI responses to be printed chunk by chunk.
+
+            ## RAG
+
+            RagEngine loads documents, splits them into chunks, stores chunks in VectorStore, retrieves relevant chunks, and calls ChatModel to generate grounded answers.
+
+            ### Sources
+
+            RagAnswer can return answer content, context and source chunks with documentId, chunkId and score.
+            """);
+
+        for (DocumentChunk chunk : splitter.split(document)) {
+            System.out.println("- chunkId: " + chunk.id());
+            System.out.println("  content:");
+            System.out.println(chunk.content());
+            System.out.println();
+        }
+    }
+
+    private static void testRagWithMarkdownSplitter(ChatModel model) {
+        System.out.println();
+        System.out.println("[13] RagEngine Markdown splitter test");
+
+        VectorStore vectorStore = new InMemoryVectorStore(new SimpleTextEmbedding(256));
+
+        RagEngine rag = new RagEngine(
+                model,
+                vectorStore,
+                new MarkdownDocumentSplitter(300, 50),
+                RagOptions.defaults().setTopK(2)
+        );
+
+        rag.addDocument(new Document("markdown-rag-doc", """
+            # VertexFlow AI Framework
+
+            VertexFlow AI Framework is a lightweight AI application development framework for Java developers.
+
+            ## RAG
+
+            RagEngine loads documents, splits them into chunks, stores chunks in VectorStore, retrieves relevant chunks, and calls ChatModel to generate grounded answers.
+
+            ## VectorStore
+
+            VectorStore is used to store document chunk vectors and search relevant chunks by similarity.
+
+            ## DocumentSplitter
+
+            DocumentSplitter is used to split documents into smaller chunks before embedding and retrieval.
+            """));
+
+        RagAnswer answer = rag.askWithSources("How does RagEngine work with Markdown documents?");
+
+        System.out.println("answer:");
+        System.out.println(answer.content());
+
+        System.out.println();
+        System.out.println("sources:");
+        for (RagSource source : answer.sources()) {
+            System.out.println("- documentId: " + source.documentId());
+            System.out.println("  chunkId: " + source.chunkId());
+            System.out.println("  score: " + source.score());
+            System.out.println("  content: " + source.content());
         }
     }
 }
