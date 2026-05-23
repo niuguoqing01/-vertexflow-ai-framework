@@ -1,12 +1,12 @@
 package com.vertexflow.ai.spring.boot.starter;
 
+import com.vertexflow.ai.rag.AddDocumentResult;
 import com.vertexflow.ai.rag.DirectoryDocumentLoader;
 import com.vertexflow.ai.rag.Document;
 import com.vertexflow.ai.rag.RagEngine;
 import com.vertexflow.ai.rag.UrlDocumentLoader;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import com.vertexflow.ai.rag.AddDocumentResult;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +16,11 @@ public class RagDocumentAutoLoader implements ApplicationRunner {
     private final RagEngine ragEngine;
     private final VertexFlowAiProperties properties;
 
+    private int lastDocumentCount;
+    private int lastTotalChunks;
+    private int lastAddedChunks;
+    private int lastSkippedChunks;
+
     public RagDocumentAutoLoader(RagEngine ragEngine, VertexFlowAiProperties properties) {
         this.ragEngine = ragEngine;
         this.properties = properties;
@@ -23,10 +28,11 @@ public class RagDocumentAutoLoader implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        List<Document> documents = new ArrayList<>();
+        reload();
+    }
 
-        loadLocalDocuments(documents);
-        loadUrlDocuments(documents);
+    public synchronized RagLoadResult reload() {
+        List<Document> documents = loadDocuments();
 
         int totalChunks = 0;
         int addedChunks = 0;
@@ -46,6 +52,11 @@ public class RagDocumentAutoLoader implements ApplicationRunner {
                     + ", skippedChunks=" + result.skippedChunks());
         }
 
+        this.lastDocumentCount = documents.size();
+        this.lastTotalChunks = totalChunks;
+        this.lastAddedChunks = addedChunks;
+        this.lastSkippedChunks = skippedChunks;
+
         if (!documents.isEmpty()) {
             System.out.println("[VertexFlow AI] Auto loaded RAG documents.");
             System.out.println("[VertexFlow AI] Document count: " + documents.size());
@@ -53,6 +64,31 @@ public class RagDocumentAutoLoader implements ApplicationRunner {
             System.out.println("[VertexFlow AI] Added chunks: " + addedChunks);
             System.out.println("[VertexFlow AI] Skipped chunks: " + skippedChunks);
         }
+
+        return new RagLoadResult(
+                documents.size(),
+                totalChunks,
+                addedChunks,
+                skippedChunks
+        );
+    }
+
+    public RagLoadResult lastResult() {
+        return new RagLoadResult(
+                lastDocumentCount,
+                lastTotalChunks,
+                lastAddedChunks,
+                lastSkippedChunks
+        );
+    }
+
+    private List<Document> loadDocuments() {
+        List<Document> documents = new ArrayList<>();
+
+        loadLocalDocuments(documents);
+        loadUrlDocuments(documents);
+
+        return documents;
     }
 
     private void loadLocalDocuments(List<Document> documents) {
@@ -90,5 +126,13 @@ public class RagDocumentAutoLoader implements ApplicationRunner {
 
         System.out.println("[VertexFlow AI] Loaded URL RAG documents.");
         System.out.println("[VertexFlow AI] URL document count: " + successCount);
+    }
+
+    public record RagLoadResult(
+            int documentCount,
+            int totalChunks,
+            int addedChunks,
+            int skippedChunks
+    ) {
     }
 }
