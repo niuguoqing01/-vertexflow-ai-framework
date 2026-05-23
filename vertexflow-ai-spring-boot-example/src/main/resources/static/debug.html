@@ -147,6 +147,18 @@
 </header>
 
 <main>
+    <section class="card full">
+        <h2>⚙️ 全局配置</h2>
+        <p>配置后端 API Base URL。默认留空表示请求当前 Spring Boot 服务。</p>
+
+        <label>API Base URL</label>
+        <input id="baseUrl" value="" placeholder="例如：http://localhost:8080"/>
+
+        <button onclick="saveBaseUrl()">保存 Base URL</button>
+        <button onclick="resetBaseUrl()">重置</button>
+
+        <pre id="configResult"></pre>
+    </section>
     <section class="card">
         <h2>💬 Chat</h2>
         <p>测试 AiClient 普通中文聊天能力。</p>
@@ -223,6 +235,48 @@
 </main>
 
 <script>
+    function getBaseUrl() {
+        const value = document.getElementById("baseUrl").value || "";
+        return value.trim().replace(/\/+$/, "");
+    }
+
+    function api(path) {
+        const baseUrl = getBaseUrl();
+
+        if (!baseUrl) {
+            return path;
+        }
+
+        if (!path.startsWith("/")) {
+            path = "/" + path;
+        }
+
+        return baseUrl + path;
+    }
+
+    function saveBaseUrl() {
+        const baseUrl = getBaseUrl();
+        localStorage.setItem("vertexflow_debug_base_url", baseUrl);
+
+        document.getElementById("configResult").textContent =
+            "✅ Base URL 已保存：\n" + (baseUrl || "当前服务");
+    }
+
+    function resetBaseUrl() {
+        document.getElementById("baseUrl").value = "";
+        localStorage.removeItem("vertexflow_debug_base_url");
+
+        document.getElementById("configResult").textContent =
+            "✅ 已重置为当前服务";
+    }
+
+    function loadBaseUrl() {
+        const saved = localStorage.getItem("vertexflow_debug_base_url");
+
+        if (saved) {
+            document.getElementById("baseUrl").value = saved;
+        }
+    }
     function setLoading(elementId, message) {
         document.getElementById(elementId).textContent = "⏳ " + message;
     }
@@ -289,96 +343,97 @@
         const message = document.getElementById("chatMessage").value;
         setLoading("chatResult", "正在请求 /chat ...");
         document.getElementById("chatResult").textContent =
-            await requestText("/chat?message=" + encode(message));
+            await requestText(api("/chat?message=" + encode(message)));
     }
 
     async function memoryChat() {
         const message = document.getElementById("memoryMessage").value;
         setLoading("memoryResult", "正在请求 Memory 接口 ...");
         document.getElementById("memoryResult").textContent =
-            await requestText("/memory-chat?message=" + encode(message));
+            await requestText(api("/memory-chat?message=" + encode(message)));
     }
 
     async function memoryAsk() {
         setLoading("memoryResult", "正在请求 Memory 接口 ...");
         document.getElementById("memoryResult").textContent =
-            await requestText("/memory-chat?message=" + encode("我叫什么，我正在开发什么项目？"));
+            await requestText(api("/memory-chat?message=" + encode("我叫什么，我正在开发什么项目？")));
     }
 
     async function memoryStatus() {
         setLoading("memoryResult", "正在请求 Memory 接口 ...");
         document.getElementById("memoryResult").textContent =
-            await requestJson("/memory/status/json");
+            await requestJson(api("/memory/status/json"));
     }
 
     async function memoryMessages() {
         setLoading("memoryResult", "正在请求 Memory 接口 ...");
         const conversationId = document.getElementById("conversationId").value;
         document.getElementById("memoryResult").textContent =
-            await requestJson("/memory/messages/json?conversationId=" + encode(conversationId));
+            await requestJson(api("/memory/messages/json?conversationId=" + encode(conversationId)));
     }
 
     async function memoryClear() {
         setLoading("memoryResult", "正在请求 Memory 接口 ...");
         const conversationId = document.getElementById("conversationId").value;
         document.getElementById("memoryResult").textContent =
-            await requestJson("/memory/clear/json?conversationId=" + encode(conversationId));
+            await requestJson(api("/memory/clear/json?conversationId=" + encode(conversationId)));
     }
 
     async function ragAsk() {
         const question = document.getElementById("ragQuestion").value;
         setLoading("ragResult", "正在请求 RAG 接口 ...");
         document.getElementById("ragResult").textContent =
-            await requestText("/rag?question=" + encode(question));
+            await requestText(api("/rag?question=" + encode(question)));
     }
 
     async function ragStatus() {
         setLoading("ragResult", "正在请求 RAG 接口 ...");
         document.getElementById("ragResult").textContent =
-            await requestJson("/rag/status/json");
+            await requestJson(api("/rag/status/json"));
     }
 
     async function ragReload() {
         setLoading("ragResult", "正在请求 RAG 接口 ...");
         document.getElementById("ragResult").textContent =
-            await requestJson("/rag/reload/json");
+            await requestJson(api("/rag/reload/json"));
     }
 
     async function ragDelete() {
         setLoading("ragResult", "正在请求 RAG 接口 ...");
         const documentId = document.getElementById("documentId").value;
         document.getElementById("ragResult").textContent =
-            await requestJson("/rag/delete/json?documentId=" + encode(documentId));
+            await requestJson(api("/rag/delete/json?documentId=" + encode(documentId)));
     }
 
     async function simpleAgent() {
         const message = document.getElementById("agentMessage").value;
         setLoading("agentResult", "正在请求 Agent 接口 ...");
         document.getElementById("agentResult").textContent =
-            await requestJson("/agent/json?message=" + encode(message));
+            await requestJson(api("/agent/json?message=" + encode(message)));
     }
 
     async function reactAgent() {
         const message = document.getElementById("agentMessage").value;
         setLoading("agentResult", "正在请求 Agent 接口 ...");
         document.getElementById("agentResult").textContent =
-            await requestJson("/agent/react/json?message=" + encode(message));
+            await requestJson(api("/agent/react/json?message=" + encode(message)));
     }
 
     async function reactTrace() {
         const message = document.getElementById("agentMessage").value;
         setLoading("agentResult", "正在请求 Agent 接口 ...");
         document.getElementById("agentResult").textContent =
-            await requestJson("/agent/react/trace?message=" + encode(message));
+            await requestJson(api("/agent/react/trace?message=" + encode(message)));
     }
 
     async function healthCheck() {
-        const memory = await requestJson("/memory/status/json");
-        const rag = await requestJson("/rag/status/json");
+        const memory = await requestJson(api("/memory/status/json"));
+        const rag = await requestJson(api("/rag/status/json"));
         setLoading("healthResult", "正在检查状态 ...");
         document.getElementById("healthResult").textContent =
             "Memory Status:\n" + memory + "\n\nRAG Status:\n" + rag;
     }
+    window.addEventListener("DOMContentLoaded", loadBaseUrl);
 </script>
 </body>
 </html>
