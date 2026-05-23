@@ -47,6 +47,7 @@ import com.vertexflow.ai.rag.PdfDocumentLoader;
 import com.vertexflow.ai.rag.UrlDocumentLoader;
 import com.vertexflow.ai.rag.AddDocumentResult;
 import com.vertexflow.ai.core.tool.ReActAgent;
+import com.vertexflow.ai.core.tool.ReActAgentOptions;
 
 import java.util.List;
 import java.util.Map;
@@ -116,6 +117,7 @@ public class Main {
         testAddDocumentResult(model);
         testDeleteDocument(model);
         testReActAgent(model);
+        testReActAgentJsonInput(model);
     }
 
     private static void testPrompt() {
@@ -1110,6 +1112,42 @@ public class Main {
         AgentResponse response = agent.run(
                 "你必须先调用 getWeather 工具查询北京天气，然后用中文告诉我结果。"
         );
+
+        System.out.println("answer:");
+        System.out.println(response.answer());
+
+        System.out.println();
+        System.out.println("steps:");
+        for (AgentStep step : response.steps()) {
+            System.out.println("- type: " + step.type());
+            System.out.println("  name: " + step.name());
+            System.out.println("  content: " + step.content());
+        }
+    }
+
+    private static void testReActAgentJsonInput(ChatModel model) {
+        System.out.println();
+        System.out.println("[38] ReActAgent JSON Action Input test");
+
+        ToolRegistry registry = new ToolRegistry();
+        registry.register(new DemoWeatherTool());
+
+        ReActAgent agent = ReActAgent.builder()
+                .chatModel(model)
+                .toolRegistry(registry)
+                .options(ReActAgentOptions.builder()
+                        .maxSteps(5)
+                        .returnSteps(true)
+                        .allowJsonActionInput(true)
+                        .build())
+                .build();
+
+        AgentResponse response = agent.run("""
+            请严格按照 ReAct 格式执行。
+            你必须先调用 getWeather 工具。
+            Action Input 必须使用 JSON：{"city":"Beijing"}
+            然后根据工具结果给出中文 Final Answer。
+            """);
 
         System.out.println("answer:");
         System.out.println(response.answer());

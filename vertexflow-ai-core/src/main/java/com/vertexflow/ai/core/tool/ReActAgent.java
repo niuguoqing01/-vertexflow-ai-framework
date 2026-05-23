@@ -4,6 +4,8 @@ import com.vertexflow.ai.core.chat.ChatMessage;
 import com.vertexflow.ai.core.chat.ChatModel;
 import com.vertexflow.ai.core.chat.ChatRequest;
 import com.vertexflow.ai.core.chat.ChatResponse;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,12 +15,13 @@ public class ReActAgent {
 
     private final ChatModel chatModel;
     private final ToolRegistry toolRegistry;
-    private final int maxSteps;
+    private final ReActAgentOptions options;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private ReActAgent(Builder builder) {
         this.chatModel = builder.chatModel;
         this.toolRegistry = builder.toolRegistry;
-        this.maxSteps = builder.maxSteps;
+        this.options = builder.options == null ? ReActAgentOptions.defaults() : builder.options;
     }
 
     public static Builder builder() {
@@ -41,7 +44,7 @@ public class ReActAgent {
 
         String scratchpad = "";
 
-        for (int step = 1; step <= maxSteps; step++) {
+        for (int step = 1; step <= options.getMaxSteps(); step++) {
             String prompt = buildPrompt(userMessage, scratchpad);
 
             ChatResponse response = chatModel.call(new ChatRequest()
@@ -103,7 +106,7 @@ public class ReActAgent {
             scratchpad += "\nObservation: " + (toolResult.success() ? toolResult.content() : toolResult.errorMessage());
         }
 
-        String answer = "Agent stopped because maxSteps was reached.";
+        String answer = "Agent stopped because maxSteps was reached. maxSteps=" + options.getMaxSteps();
 
         steps.add(new AgentStep(
                 AgentStepType.FINAL_ANSWER,
@@ -123,7 +126,7 @@ public class ReActAgent {
                 如果需要调用工具：
                 Thought: 你的思考
                 Action: 工具名称
-                Action Input: 参数，格式 key=value，多参数用英文逗号分隔
+                Action Input: 参数，支持 JSON，例如 {"city":"Beijing"}，也支持 key=value，多参数用英文逗号分隔
 
                 如果已经得到最终答案：
                 Thought: 你的思考
@@ -134,8 +137,8 @@ public class ReActAgent {
 
                 注意：
                 - Action 必须是工具名称
-                - Action Input 示例：city=Beijing
-                - 不要输出 JSON
+                - Action Input 推荐使用 JSON，例如 {"city":"Beijing"}
+                - 如果不用 JSON，也可以使用 city=Beijing
                 - 最终回答请使用中文
                 """.formatted(toolDescriptions());
     }
@@ -218,9 +221,23 @@ public class ReActAgent {
             return Map.of();
         }
 
+        String trimmed = input.trim();
+
+        if (options.isAllowJsonActionInput() && trimmed.startsWith("{") && trimmed.endsWith("}")) {
+            try {
+                return objectMapper.readValue(
+                        trimmed,
+                        new TypeReference<Map<String, Object>>() {
+                        }
+                );
+            } catch (Exception ignored) {
+                // fallback to key=value parser
+            }
+        }
+
         java.util.Map<String, Object> arguments = new java.util.LinkedHashMap<>();
 
-        String[] pairs = input.split(",");
+        String[] pairs = trimmed.split(",");
 
         for (String pair : pairs) {
             String[] kv = pair.split("=", 2);
@@ -244,7 +261,7 @@ public class ReActAgent {
 
         private ChatModel chatModel;
         private ToolRegistry toolRegistry;
-        private int maxSteps = 5;
+        private ReActAgentOptions options;
 
         public Builder chatModel(ChatModel chatModel) {
             this.chatModel = chatModel;
@@ -257,7 +274,14 @@ public class ReActAgent {
         }
 
         public Builder maxSteps(int maxSteps) {
-            this.maxSteps = maxSteps;
+            this.options = ReActAgentOptions.builder()
+                    .maxSteps(maxSteps)
+                    .build();
+            return this;
+        }
+
+        public Builder options(ReActAgentOptions options) {
+            this.options = options;
             return this;
         }
 
@@ -270,9 +294,6 @@ public class ReActAgent {
                 throw new IllegalArgumentException("toolRegistry is required");
             }
 
-            if (maxSteps <= 0) {
-                throw new IllegalArgumentException("maxSteps must be greater than 0");
-            }
 
             return new ReActAgent(this);
         }
