@@ -42,6 +42,7 @@ import com.vertexflow.ai.core.tool.ToolSchemaGenerator;
 import com.vertexflow.ai.core.tool.ToolCall;
 import com.vertexflow.ai.core.tool.ToolCallExecutor;
 import com.vertexflow.ai.core.tool.ToolCallResult;
+import com.vertexflow.ai.model.openai.OpenAiToolCallParser;
 
 import java.util.List;
 import java.util.Map;
@@ -98,6 +99,7 @@ public class Main {
         testToolCalling();
         testToolSchema();
         testToolCallExecutor();
+        testOpenAiToolCallParser();
     }
 
     private static void testPrompt() {
@@ -675,6 +677,67 @@ public class Main {
 
         System.out.println("execute all:");
         for (ToolCallResult result : executor.executeAll(List.of(weatherCall, sumCall))) {
+            System.out.println("- " + result.toolCall().name() + ": " + result.result().content());
+        }
+    }
+
+    private static void testOpenAiToolCallParser() {
+        System.out.println();
+        System.out.println("[25] OpenAI ToolCall Parser test");
+
+        String rawResponse = """
+            {
+              "id": "chatcmpl-test",
+              "object": "chat.completion",
+              "created": 1234567890,
+              "model": "deepseek-chat",
+              "choices": [
+                {
+                  "index": 0,
+                  "message": {
+                    "role": "assistant",
+                    "content": null,
+                    "tool_calls": [
+                      {
+                        "id": "call_001",
+                        "type": "function",
+                        "function": {
+                          "name": "getWeather",
+                          "arguments": "{\\"city\\":\\"Beijing\\"}"
+                        }
+                      },
+                      {
+                        "id": "call_002",
+                        "type": "function",
+                        "function": {
+                          "name": "calculateSum",
+                          "arguments": "{\\"a\\":10,\\"b\\":20}"
+                        }
+                      }
+                    ]
+                  },
+                  "finish_reason": "tool_calls"
+                }
+              ]
+            }
+            """;
+
+        OpenAiToolCallParser parser = new OpenAiToolCallParser();
+
+        List<ToolCall> toolCalls = parser.parse(rawResponse);
+
+        for (ToolCall toolCall : toolCalls) {
+            System.out.println("- name: " + toolCall.name());
+            System.out.println("  arguments: " + toolCall.arguments());
+        }
+
+        ToolRegistry registry = new ToolRegistry();
+        registry.register(new DemoWeatherTool());
+
+        ToolCallExecutor executor = ToolCallExecutor.create(registry);
+
+        System.out.println("execute parsed tool calls:");
+        for (ToolCallResult result : executor.executeAll(toolCalls)) {
             System.out.println("- " + result.toolCall().name() + ": " + result.result().content());
         }
     }
