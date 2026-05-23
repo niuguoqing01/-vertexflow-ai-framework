@@ -1,0 +1,5 @@
+VertexFlow AI Framework is a lightweight AI application development framework for Java developers.
+
+It provides ChatModel, StreamingChatModel, PromptTemplate, ChatMemory, EmbeddingModel, VectorStore and RagEngine.
+
+The goal is to help Java developers build AI applications with clean and simple APIs.

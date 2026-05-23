@@ -21,6 +21,7 @@ import com.vertexflow.ai.rag.DocumentSplitter;
 import com.vertexflow.ai.rag.RagAnswer;
 import com.vertexflow.ai.rag.RagOptions;
 import com.vertexflow.ai.rag.RagSource;
+import com.vertexflow.ai.rag.TextFileDocumentLoader;
 
 import java.util.Map;
 
@@ -58,6 +59,7 @@ public class Main {
         testVectorStore();
         testRag(model);
         testRagWithSources(model);
+        testDocumentLoader(model);
     }
 
     private static void testPrompt() {
@@ -201,6 +203,32 @@ public class Main {
         for (RagSource source : answer.sources()) {
             System.out.println("- documentId: " + source.documentId());
             System.out.println("  chunkId: " + source.chunkId());
+            System.out.println("  score: " + source.score());
+            System.out.println("  content: " + source.content());
+        }
+    }
+
+    private static void testDocumentLoader(ChatModel model) {
+        System.out.println();
+        System.out.println("[9] DocumentLoader test");
+
+        RagEngine rag = new RagEngine(model);
+
+        Document document = TextFileDocumentLoader.loadFile(
+                "vertexflow-ai-examples/src/main/resources/doc/vertexflow-intro.txt"
+        );
+
+        rag.addDocument(document);
+
+        RagAnswer answer = rag.askWithSources("What capabilities does VertexFlow AI Framework provide?");
+
+        System.out.println("answer:");
+        System.out.println(answer.content());
+
+        System.out.println();
+        System.out.println("sources:");
+        for (RagSource source : answer.sources()) {
+            System.out.println("- documentId: " + source.documentId());
             System.out.println("  score: " + source.score());
             System.out.println("  content: " + source.content());
         }
