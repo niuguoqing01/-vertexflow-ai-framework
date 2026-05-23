@@ -3,6 +3,7 @@ package com.vertexflow.ai.rag;
 import com.vertexflow.ai.core.chat.ChatMessage;
 import com.vertexflow.ai.core.chat.ChatModel;
 import com.vertexflow.ai.core.chat.ChatRequest;
+import com.vertexflow.ai.core.embedding.EmbeddingModel;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -14,9 +15,13 @@ public class RagEngine {
     private final InMemoryVectorStore vectorStore;
 
     public RagEngine(ChatModel chatModel) {
+        this(chatModel, new SimpleTextEmbedding(256));
+    }
+
+    public RagEngine(ChatModel chatModel, EmbeddingModel embeddingModel) {
         this.chatModel = chatModel;
         this.splitter = new DocumentSplitter(300, 50);
-        this.vectorStore = new InMemoryVectorStore(new SimpleTextEmbedding(256));
+        this.vectorStore = new InMemoryVectorStore(embeddingModel);
     }
 
     public void addDocument(Document document) {

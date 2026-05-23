@@ -1,6 +1,10 @@
 package com.vertexflow.ai.rag;
 
-public class SimpleTextEmbedding {
+import com.vertexflow.ai.core.embedding.EmbeddingModel;
+import com.vertexflow.ai.core.embedding.EmbeddingRequest;
+import com.vertexflow.ai.core.embedding.EmbeddingResponse;
+
+public class SimpleTextEmbedding implements EmbeddingModel {
 
     private final int dimension;
 
@@ -8,7 +12,13 @@ public class SimpleTextEmbedding {
         this.dimension = dimension;
     }
 
-    public double[] embed(String text) {
+    @Override
+    public EmbeddingResponse embed(EmbeddingRequest request) {
+        double[] vector = embedText(request.text());
+        return new EmbeddingResponse(vector, "simple-text-embedding", null);
+    }
+
+    public double[] embedText(String text) {
         double[] vector = new double[dimension];
 
         if (text == null || text.isBlank()) {

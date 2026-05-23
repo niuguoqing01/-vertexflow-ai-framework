@@ -9,6 +9,10 @@ import com.vertexflow.ai.model.openai.OpenAiCompatibleChatModel;
 import com.vertexflow.ai.rag.Document;
 import com.vertexflow.ai.rag.RagEngine;
 import com.vertexflow.ai.core.chat.StreamingChatModel;
+import com.vertexflow.ai.core.embedding.EmbeddingModel;
+import com.vertexflow.ai.core.embedding.EmbeddingResponse;
+import com.vertexflow.ai.model.openai.OpenAiCompatibleEmbeddingModel;
+import com.vertexflow.ai.rag.SimpleTextEmbedding;
 
 import java.util.Map;
 
@@ -35,9 +39,14 @@ public class Main {
                 .baseUrl("https://api.deepseek.com/v1")
                 .model("deepseek-chat")
                 .build();
-
+        EmbeddingModel embeddingModel = OpenAiCompatibleEmbeddingModel.builder()
+                .apiKey(apiKey)
+                .baseUrl("https://api.deepseek.com/v1")
+                .model("text-embedding-v1")
+                .build();
         testChat(model);
         testStream(model);
+        testEmbedding(new SimpleTextEmbedding(256));
         testRag(model);
     }
 
@@ -84,7 +93,7 @@ public class Main {
 
     private static void testRag(ChatModel model) {
         System.out.println();
-        System.out.println("[5] RagEngine test");
+        System.out.println("[6] RagEngine test");
 
         RagEngine rag = new RagEngine(model);
 
@@ -114,5 +123,17 @@ public class Main {
                 System.out.println("[stream finished]");
             }
         });
+    }
+
+    private static void testEmbedding(EmbeddingModel embeddingModel) {
+        System.out.println();
+        System.out.println("[5] EmbeddingModel test");
+
+        EmbeddingResponse response = embeddingModel.embed("VertexFlow AI Framework is a Java AI framework.");
+
+        System.out.println("model: " + response.model());
+        System.out.println("tokens: " + response.tokens());
+        System.out.println("dimension: " + response.vector().length);
+        System.out.println("first value: " + response.vector()[0]);
     }
 }
