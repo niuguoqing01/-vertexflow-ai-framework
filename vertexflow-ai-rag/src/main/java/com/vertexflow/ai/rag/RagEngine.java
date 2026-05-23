@@ -12,16 +12,20 @@ public class RagEngine {
 
     private final ChatModel chatModel;
     private final DocumentSplitter splitter;
-    private final InMemoryVectorStore vectorStore;
+    private final VectorStore vectorStore;
 
     public RagEngine(ChatModel chatModel) {
         this(chatModel, new SimpleTextEmbedding(256));
     }
 
     public RagEngine(ChatModel chatModel, EmbeddingModel embeddingModel) {
+        this(chatModel, new InMemoryVectorStore(embeddingModel));
+    }
+
+    public RagEngine(ChatModel chatModel, VectorStore vectorStore) {
         this.chatModel = chatModel;
         this.splitter = new DocumentSplitter(300, 50);
-        this.vectorStore = new InMemoryVectorStore(embeddingModel);
+        this.vectorStore = vectorStore;
     }
 
     public void addDocument(Document document) {
@@ -30,7 +34,7 @@ public class RagEngine {
     }
 
     public String ask(String question) {
-        List<InMemoryVectorStore.SearchResult> results = vectorStore.search(question, 3);
+        List<VectorSearchResult> results = vectorStore.search(question, 3);
 
         String context = results.stream()
                 .map(result -> "- " + result.chunk().content())

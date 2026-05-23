@@ -13,6 +13,11 @@ import com.vertexflow.ai.core.embedding.EmbeddingModel;
 import com.vertexflow.ai.core.embedding.EmbeddingResponse;
 import com.vertexflow.ai.model.openai.OpenAiCompatibleEmbeddingModel;
 import com.vertexflow.ai.rag.SimpleTextEmbedding;
+import com.vertexflow.ai.rag.InMemoryVectorStore;
+import com.vertexflow.ai.rag.SimpleTextEmbedding;
+import com.vertexflow.ai.rag.VectorSearchResult;
+import com.vertexflow.ai.rag.VectorStore;
+import com.vertexflow.ai.rag.DocumentSplitter;
 
 import java.util.Map;
 
@@ -47,6 +52,7 @@ public class Main {
         testChat(model);
         testStream(model);
         testEmbedding(new SimpleTextEmbedding(256));
+        testVectorStore();
         testRag(model);
     }
 
@@ -93,7 +99,7 @@ public class Main {
 
     private static void testRag(ChatModel model) {
         System.out.println();
-        System.out.println("[6] RagEngine test");
+        System.out.println("[7] RagEngine test");
 
         RagEngine rag = new RagEngine(model);
 
@@ -135,5 +141,25 @@ public class Main {
         System.out.println("tokens: " + response.tokens());
         System.out.println("dimension: " + response.vector().length);
         System.out.println("first value: " + response.vector()[0]);
+    }
+
+    private static void testVectorStore() {
+        System.out.println();
+        System.out.println("[6] VectorStore test");
+
+        VectorStore vectorStore = new InMemoryVectorStore(new SimpleTextEmbedding(256));
+
+        Document document = new Document("doc-vector-1", """
+            VertexFlow AI Framework provides ChatModel, StreamingChatModel, EmbeddingModel and VectorStore.
+            VectorStore is used to store and search document chunks by vector similarity.
+            """);
+
+        DocumentSplitter splitter = new DocumentSplitter(100, 20);
+        vectorStore.add(splitter.split(document));
+
+        for (VectorSearchResult result : vectorStore.search("What is VectorStore?", 3)) {
+            System.out.println("score: " + result.score());
+            System.out.println("chunk: " + result.chunk().content());
+        }
     }
 }

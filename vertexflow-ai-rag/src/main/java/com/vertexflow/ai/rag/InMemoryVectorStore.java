@@ -6,12 +6,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-public class InMemoryVectorStore {
+public class InMemoryVectorStore implements VectorStore {
 
     private record VectorItem(DocumentChunk chunk, double[] vector) {
-    }
-
-    public record SearchResult(DocumentChunk chunk, double score) {
     }
 
     private final EmbeddingModel embeddingModel;
@@ -21,6 +18,7 @@ public class InMemoryVectorStore {
         this.embeddingModel = embeddingModel;
     }
 
+    @Override
     public void add(List<DocumentChunk> chunks) {
         for (DocumentChunk chunk : chunks) {
             double[] vector = embeddingModel.embed(chunk.content()).vector();
@@ -28,12 +26,13 @@ public class InMemoryVectorStore {
         }
     }
 
-    public List<SearchResult> search(String query, int topK) {
+    @Override
+    public List<VectorSearchResult> search(String query, int topK) {
         double[] queryVector = embeddingModel.embed(query).vector();
 
         return items.stream()
-                .map(item -> new SearchResult(item.chunk(), cosine(queryVector, item.vector())))
-                .sorted(Comparator.comparingDouble(SearchResult::score).reversed())
+                .map(item -> new VectorSearchResult(item.chunk(), cosine(queryVector, item.vector())))
+                .sorted(Comparator.comparingDouble(VectorSearchResult::score).reversed())
                 .limit(topK)
                 .toList();
     }
