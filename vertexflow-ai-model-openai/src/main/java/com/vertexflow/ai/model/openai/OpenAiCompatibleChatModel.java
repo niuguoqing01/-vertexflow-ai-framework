@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import com.vertexflow.ai.core.exception.ModelCallException;
+import com.vertexflow.ai.core.exception.StreamCallException;
 
 @SuppressWarnings("unchecked")
 public class OpenAiCompatibleChatModel implements StreamingChatModel {
@@ -67,7 +69,7 @@ public class OpenAiCompatibleChatModel implements StreamingChatModel {
             HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new RuntimeException("AI request failed. status=" + response.statusCode() + ", body=" + response.body());
+                throw new ModelCallException("AI request failed. status=" + response.statusCode() + ", body=" + response.body());
             }
 
             JsonNode root = objectMapper.readTree(response.body());
@@ -98,7 +100,7 @@ public class OpenAiCompatibleChatModel implements StreamingChatModel {
                     response.body()
             );
         } catch (Exception e) {
-            throw new RuntimeException("OpenAI compatible chat model call error", e);
+            throw new ModelCallException("OpenAI compatible chat model call error", e);
         }
     }
 
@@ -189,7 +191,7 @@ public class OpenAiCompatibleChatModel implements StreamingChatModel {
 
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 String errorBody = new String(response.body().readAllBytes());
-                throw new RuntimeException("AI stream request failed. status=" + response.statusCode() + ", body=" + errorBody);
+                throw new StreamCallException("AI stream request failed. status=" + response.statusCode() + ", body=" + errorBody);
             }
 
             try (java.io.BufferedReader reader = new java.io.BufferedReader(
@@ -223,7 +225,7 @@ public class OpenAiCompatibleChatModel implements StreamingChatModel {
                 }
             }
         } catch (Exception e) {
-            throw new RuntimeException("OpenAI compatible streaming chat model call error", e);
+            throw new StreamCallException("OpenAI compatible streaming chat model call error", e);
         }
     }
 }

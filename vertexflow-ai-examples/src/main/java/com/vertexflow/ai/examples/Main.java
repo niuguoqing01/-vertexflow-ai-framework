@@ -32,6 +32,7 @@ import com.vertexflow.ai.core.VertexFlowAi;
 import com.vertexflow.ai.core.chat.ChatOptions;
 import com.vertexflow.ai.core.chat.ChatRequest;
 import com.vertexflow.ai.core.chat.ChatResponse;
+import com.vertexflow.ai.core.exception.AiException;
 
 import java.util.List;
 import java.util.Map;
@@ -80,6 +81,7 @@ public class Main {
         testAiClientStreaming(model);
         testChatOptions(model);
         testChatResponse(model);
+        testAiException();
     }
 
     private static void testPrompt() {
@@ -503,5 +505,17 @@ public class Main {
         }
 
         System.out.println("rawResponse exists: " + (response.rawResponse() != null));
+    }
+
+    private static void testAiException() {
+        System.out.println();
+        System.out.println("[19] AiException test");
+
+        try {
+            TextFileDocumentLoader.loadFile("not-exist-file.txt");
+        } catch (AiException e) {
+            System.out.println("errorCode: " + e.getCode());
+            System.out.println("message: " + e.getMessage());
+        }
     }
 }

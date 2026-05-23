@@ -5,6 +5,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
+import com.vertexflow.ai.core.exception.AiErrorCode;
+import com.vertexflow.ai.core.exception.AiException;
 
 public class DirectoryDocumentLoader {
 
@@ -39,7 +41,7 @@ public class DirectoryDocumentLoader {
                         .toList();
             }
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load directory: " + directoryPath, e);
+            throw new AiException(AiErrorCode.DOCUMENT_LOAD_ERROR, "Failed to load directory: " + directoryPath, e);
         }
     }
 

@@ -13,6 +13,7 @@ import java.net.http.HttpResponse;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import com.vertexflow.ai.core.exception.EmbeddingException;
 
 public class OpenAiCompatibleEmbeddingModel implements EmbeddingModel {
 
@@ -53,7 +54,7 @@ public class OpenAiCompatibleEmbeddingModel implements EmbeddingModel {
             HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new RuntimeException("Embedding request failed. status="
+                throw new EmbeddingException("Embedding request failed. status="
                         + response.statusCode() + ", body=" + response.body());
             }
 
@@ -71,7 +72,7 @@ public class OpenAiCompatibleEmbeddingModel implements EmbeddingModel {
 
             return new EmbeddingResponse(vector, model, tokens);
         } catch (Exception e) {
-            throw new RuntimeException("OpenAI compatible embedding model call error", e);
+            throw new EmbeddingException("OpenAI compatible embedding model call error", e);
         }
     }
 

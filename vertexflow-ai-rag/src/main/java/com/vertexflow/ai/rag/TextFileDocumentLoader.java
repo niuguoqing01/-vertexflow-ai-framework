@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import com.vertexflow.ai.core.exception.AiErrorCode;
+import com.vertexflow.ai.core.exception.AiException;
 
 public class TextFileDocumentLoader implements DocumentLoader {
 
@@ -18,7 +20,7 @@ public class TextFileDocumentLoader implements DocumentLoader {
             String content = Files.readString(filePath, StandardCharsets.UTF_8);
             return new Document(filePath.getFileName().toString(), content);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load text file: " + path, e);
+            throw new AiException(AiErrorCode.DOCUMENT_LOAD_ERROR, "Failed to load text file: " + path, e);
         }
     }
 }

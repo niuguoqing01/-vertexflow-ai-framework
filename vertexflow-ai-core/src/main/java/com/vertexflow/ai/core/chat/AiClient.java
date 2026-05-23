@@ -2,6 +2,8 @@ package com.vertexflow.ai.core.chat;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.vertexflow.ai.core.exception.AiErrorCode;
+import com.vertexflow.ai.core.exception.AiException;
 
 public class AiClient {
 
@@ -50,7 +52,7 @@ public class AiClient {
 
     public void stream(String userMessage, ChatStreamHandler handler) {
         if (!(chatModel instanceof StreamingChatModel streamingChatModel)) {
-            throw new UnsupportedOperationException("Current chatModel does not support streaming");
+            throw new AiException(AiErrorCode.UNSUPPORTED_OPERATION, "Current chatModel does not support streaming");
         }
 
         ChatRequest request = createRequest(userMessage);
@@ -59,7 +61,7 @@ public class AiClient {
 
     public void stream(ChatRequest request, ChatStreamHandler handler) {
         if (!(chatModel instanceof StreamingChatModel streamingChatModel)) {
-            throw new UnsupportedOperationException("Current chatModel does not support streaming");
+            throw new AiException(AiErrorCode.UNSUPPORTED_OPERATION, "Current chatModel does not support streaming");
         }
 
         ChatRequest finalRequest = mergeSystemMessages(request);
