@@ -5,6 +5,11 @@ public class ReActAgentOptions {
     private int maxSteps = 5;
     private boolean returnSteps = true;
     private boolean allowJsonActionInput = true;
+    private boolean retryOnFormatError = true;
+
+    public boolean isRetryOnFormatError() {
+        return retryOnFormatError;
+    }
 
     private ReActAgentOptions() {
     }
@@ -54,6 +59,11 @@ public class ReActAgentOptions {
 
         public ReActAgentOptions build() {
             return options;
+        }
+
+        public Builder retryOnFormatError(boolean retryOnFormatError) {
+            options.retryOnFormatError = retryOnFormatError;
+            return this;
         }
     }
 }

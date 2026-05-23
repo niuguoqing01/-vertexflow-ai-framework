@@ -97,6 +97,7 @@ public class VertexFlowAiAutoConfiguration {
                         .maxSteps(properties.getTool().getMaxSteps())
                         .returnSteps(true)
                         .allowJsonActionInput(properties.getTool().isReactAllowJsonActionInput())
+                        .retryOnFormatError(properties.getTool().isReactRetryOnFormatError())
                         .build())
                 .build();
     }

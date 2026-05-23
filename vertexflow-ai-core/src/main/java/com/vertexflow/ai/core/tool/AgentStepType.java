@@ -6,5 +6,6 @@ public enum AgentStepType {
     MODEL_RESPONSE,
     TOOL_CALL,
     TOOL_RESULT,
-    FINAL_ANSWER
+    FINAL_ANSWER,
+    FORMAT_ERROR
 }

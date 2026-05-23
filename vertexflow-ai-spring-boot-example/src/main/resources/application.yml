@@ -44,3 +44,4 @@ vertexflow:
       max-steps: 10
       react-enabled: true
       react-allow-json-action-input: true
+      react-retry-on-format-error: true

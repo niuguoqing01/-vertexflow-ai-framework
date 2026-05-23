@@ -342,6 +342,11 @@ public class VertexFlowAiProperties {
          */
         private boolean reactAllowJsonActionInput = true;
 
+        /**
+         * Whether ReActAgent should retry when model output format is invalid.
+         */
+        private boolean reactRetryOnFormatError = true;
+
         public boolean isReactEnabled() {
             return reactEnabled;
         }
@@ -375,6 +380,15 @@ public class VertexFlowAiProperties {
 
         public Tool setMaxSteps(int maxSteps) {
             this.maxSteps = maxSteps;
+            return this;
+        }
+
+        public boolean isReactRetryOnFormatError() {
+            return reactRetryOnFormatError;
+        }
+
+        public Tool setReactRetryOnFormatError(boolean reactRetryOnFormatError) {
+            this.reactRetryOnFormatError = reactRetryOnFormatError;
             return this;
         }
     }

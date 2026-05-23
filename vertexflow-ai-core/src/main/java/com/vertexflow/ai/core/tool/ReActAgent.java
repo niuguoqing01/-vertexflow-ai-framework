@@ -74,6 +74,36 @@ public class ReActAgent {
             }
 
             if (action.toolName() == null || action.toolName().isBlank()) {
+                if (options.isRetryOnFormatError()) {
+                    String formatError = """
+                FORMAT_ERROR:
+                Your response format is invalid.
+
+                You must follow one of these formats exactly:
+
+                Format for tool call:
+                Thought: your thought
+                Action: tool name
+                Action Input: {"key":"value"}
+
+                Format for final answer:
+                Thought: your thought
+                Final Answer: final answer in Chinese
+                """;
+
+                    steps.add(new AgentStep(
+                            AgentStepType.FORMAT_ERROR,
+                            "format_error",
+                            formatError,
+                            content
+                    ));
+
+                    scratchpad += "\n" + content;
+                    scratchpad += "\nObservation: " + formatError;
+
+                    continue;
+                }
+
                 String finalAnswer = content;
 
                 steps.add(new AgentStep(
@@ -120,27 +150,32 @@ public class ReActAgent {
 
     private String systemPrompt() {
         return """
-                你是一个 ReAct Agent。
-                你必须严格按照下面格式回答：
+            你是一个 ReAct Agent。
+            你必须严格按照下面格式回答，不能输出额外格式。
 
-                如果需要调用工具：
-                Thought: 你的思考
-                Action: 工具名称
-                Action Input: 参数，支持 JSON，例如 {"city":"Beijing"}，也支持 key=value，多参数用英文逗号分隔
+            如果需要调用工具，只能使用：
 
-                如果已经得到最终答案：
-                Thought: 你的思考
-                Final Answer: 最终答案
+            Thought: 你的思考
+            Action: 工具名称
+            Action Input: 参数，推荐 JSON，例如 {"city":"Beijing"}，也支持 key=value
 
-                可用工具：
-                %s
+            如果已经得到最终答案，只能使用：
 
-                注意：
-                - Action 必须是工具名称
-                - Action Input 推荐使用 JSON，例如 {"city":"Beijing"}
-                - 如果不用 JSON，也可以使用 city=Beijing
-                - 最终回答请使用中文
-                """.formatted(toolDescriptions());
+            Thought: 你的思考
+            Final Answer: 最终答案
+
+            可用工具：
+            %s
+
+            注意：
+            - Action 必须是工具名称
+            - Action Input 推荐使用 JSON，例如 {"city":"Beijing"}
+            - 如果不用 JSON，也可以使用 city=Beijing
+            - 不要使用 Markdown 表格
+            - 不要使用代码块
+            - 不要输出除 Thought / Action / Action Input / Final Answer 之外的字段
+            - 最终回答请使用中文
+            """.formatted(toolDescriptions());
     }
 
     private String toolDescriptions() {

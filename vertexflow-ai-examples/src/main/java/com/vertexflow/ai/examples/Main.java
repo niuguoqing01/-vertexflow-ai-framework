@@ -118,6 +118,7 @@ public class Main {
         testDeleteDocument(model);
         testReActAgent(model);
         testReActAgentJsonInput(model);
+        testReActAgentFormatRecovery(model);
     }
 
     private static void testPrompt() {
@@ -1147,6 +1148,42 @@ public class Main {
             你必须先调用 getWeather 工具。
             Action Input 必须使用 JSON：{"city":"Beijing"}
             然后根据工具结果给出中文 Final Answer。
+            """);
+
+        System.out.println("answer:");
+        System.out.println(response.answer());
+
+        System.out.println();
+        System.out.println("steps:");
+        for (AgentStep step : response.steps()) {
+            System.out.println("- type: " + step.type());
+            System.out.println("  name: " + step.name());
+            System.out.println("  content: " + step.content());
+        }
+    }
+
+    private static void testReActAgentFormatRecovery(ChatModel model) {
+        System.out.println();
+        System.out.println("[39] ReActAgent Format Recovery test");
+
+        ToolRegistry registry = new ToolRegistry();
+        registry.register(new DemoWeatherTool());
+
+        ReActAgent agent = ReActAgent.builder()
+                .chatModel(model)
+                .toolRegistry(registry)
+                .options(ReActAgentOptions.builder()
+                        .maxSteps(6)
+                        .returnSteps(true)
+                        .allowJsonActionInput(true)
+                        .retryOnFormatError(true)
+                        .build())
+                .build();
+
+        AgentResponse response = agent.run("""
+            你需要查询北京天气。
+            如果第一次格式不规范，请根据系统提示修正格式。
+            最终用中文回答。
             """);
 
         System.out.println("answer:");
