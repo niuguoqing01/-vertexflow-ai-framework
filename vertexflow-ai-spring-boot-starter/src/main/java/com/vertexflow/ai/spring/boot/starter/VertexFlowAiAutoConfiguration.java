@@ -29,6 +29,8 @@ import com.vertexflow.ai.model.openai.OpenAiToolCallParser;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationContext;
 import com.vertexflow.ai.rag.QdrantVectorStore;
+import com.vertexflow.ai.core.tool.ReActAgent;
+import com.vertexflow.ai.core.tool.ReActAgentOptions;
 
 import java.lang.reflect.Method;
 
@@ -76,6 +78,25 @@ public class VertexFlowAiAutoConfiguration {
                 .options(AgentOptions.builder()
                         .maxSteps(properties.getTool().getMaxSteps())
                         .returnSteps(true)
+                        .build())
+                .build();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "vertexflow.ai.tool", name = "react-enabled", havingValue = "true")
+    public ReActAgent reActAgent(
+            ChatModel chatModel,
+            ToolRegistry toolRegistry,
+            VertexFlowAiProperties properties
+    ) {
+        return ReActAgent.builder()
+                .chatModel(chatModel)
+                .toolRegistry(toolRegistry)
+                .options(ReActAgentOptions.builder()
+                        .maxSteps(properties.getTool().getMaxSteps())
+                        .returnSteps(true)
+                        .allowJsonActionInput(properties.getTool().isReactAllowJsonActionInput())
                         .build())
                 .build();
     }

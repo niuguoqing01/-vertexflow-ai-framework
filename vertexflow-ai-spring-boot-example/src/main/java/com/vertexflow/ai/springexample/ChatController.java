@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.vertexflow.ai.spring.boot.starter.RagDocumentAutoLoader;
+import com.vertexflow.ai.core.tool.ReActAgent;
 
 @RestController
 public class ChatController {
@@ -21,18 +22,20 @@ public class ChatController {
     private final ObjectProvider<RagEngine> ragEngineProvider;
     private final ObjectProvider<SimpleToolAgent> simpleToolAgentProvider;
     private final ObjectProvider<RagDocumentAutoLoader> ragDocumentAutoLoaderProvider;
+    private final ObjectProvider<ReActAgent> reActAgentProvider;
 
     public ChatController(
             AiClient aiClient,
             ObjectProvider<RagEngine> ragEngineProvider,
             ObjectProvider<SimpleToolAgent> simpleToolAgentProvider,
-            ObjectProvider<RagDocumentAutoLoader> ragDocumentAutoLoaderProvider
+            ObjectProvider<RagDocumentAutoLoader> ragDocumentAutoLoaderProvider,
+            ObjectProvider<ReActAgent> reActAgentProvider
     ) {
         this.aiClient = aiClient;
         this.ragEngineProvider = ragEngineProvider;
         this.simpleToolAgentProvider = simpleToolAgentProvider;
         this.ragDocumentAutoLoaderProvider = ragDocumentAutoLoaderProvider;
-
+        this.reActAgentProvider = reActAgentProvider;
     }
 
     @GetMapping("/rag/reload")
@@ -144,6 +147,34 @@ public class ChatController {
 
         if (agent == null) {
             return "SimpleToolAgent is not enabled. Please set vertexflow.ai.tool.enabled=true";
+        }
+
+        AgentResponse response = agent.run(message);
+
+        StringBuilder builder = new StringBuilder();
+        builder.append("answer:\n")
+                .append(response.answer())
+                .append("\n\nsteps:\n");
+
+        for (AgentStep step : response.steps()) {
+            builder.append("- type: ")
+                    .append(step.type())
+                    .append("\n  name: ")
+                    .append(step.name())
+                    .append("\n  content: ")
+                    .append(step.content())
+                    .append("\n");
+        }
+
+        return builder.toString();
+    }
+
+    @GetMapping("/agent/react")
+    public String reactAgent(@RequestParam("message") String message) {
+        ReActAgent agent = reActAgentProvider.getIfAvailable();
+
+        if (agent == null) {
+            return "ReActAgent is not enabled. Please set vertexflow.ai.tool.enabled=true and vertexflow.ai.tool.react-enabled=true";
         }
 
         AgentResponse response = agent.run(message);

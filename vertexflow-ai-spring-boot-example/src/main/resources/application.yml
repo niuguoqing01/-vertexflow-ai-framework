@@ -42,3 +42,5 @@ vertexflow:
     tool:
       enabled: true
       max-steps: 10
+      react-enabled: true
+      react-allow-json-action-input: true

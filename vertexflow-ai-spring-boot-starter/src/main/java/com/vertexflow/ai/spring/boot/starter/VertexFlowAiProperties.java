@@ -332,6 +332,34 @@ public class VertexFlowAiProperties {
          */
         private int maxSteps = 10;
 
+        /**
+         * Whether ReActAgent is enabled.
+         */
+        private boolean reactEnabled = false;
+
+        /**
+         * Whether ReActAgent supports JSON Action Input.
+         */
+        private boolean reactAllowJsonActionInput = true;
+
+        public boolean isReactEnabled() {
+            return reactEnabled;
+        }
+
+        public Tool setReactEnabled(boolean reactEnabled) {
+            this.reactEnabled = reactEnabled;
+            return this;
+        }
+
+        public boolean isReactAllowJsonActionInput() {
+            return reactAllowJsonActionInput;
+        }
+
+        public Tool setReactAllowJsonActionInput(boolean reactAllowJsonActionInput) {
+            this.reactAllowJsonActionInput = reactAllowJsonActionInput;
+            return this;
+        }
+
         public boolean isEnabled() {
             return enabled;
         }
