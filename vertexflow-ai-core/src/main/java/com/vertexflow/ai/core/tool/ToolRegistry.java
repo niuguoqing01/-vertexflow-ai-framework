@@ -188,4 +188,12 @@ public class ToolRegistry {
                 .map(ToolSchemaGenerator::toOpenAiToolSchema)
                 .toList();
     }
+
+    public ToolResult execute(ToolCall toolCall) {
+        if (toolCall == null) {
+            throw new AiException(AiErrorCode.INVALID_REQUEST, "ToolCall must not be null");
+        }
+
+        return execute(toolCall.name(), toolCall.arguments());
+    }
 }

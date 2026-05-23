@@ -39,6 +39,9 @@ import com.vertexflow.ai.core.tool.ToolDefinition;
 import com.vertexflow.ai.core.tool.ToolRegistry;
 import com.vertexflow.ai.core.tool.ToolResult;
 import com.vertexflow.ai.core.tool.ToolSchemaGenerator;
+import com.vertexflow.ai.core.tool.ToolCall;
+import com.vertexflow.ai.core.tool.ToolCallExecutor;
+import com.vertexflow.ai.core.tool.ToolCallResult;
 
 import java.util.List;
 import java.util.Map;
@@ -94,6 +97,7 @@ public class Main {
         testMemoryOptions();
         testToolCalling();
         testToolSchema();
+        testToolCallExecutor();
     }
 
     private static void testPrompt() {
@@ -641,5 +645,37 @@ public class Main {
         System.out.println();
         System.out.println("single tool schema:");
         System.out.println(ToolSchemaGenerator.toSchema(definition));
+    }
+
+    private static void testToolCallExecutor() {
+        System.out.println();
+        System.out.println("[24] ToolCallExecutor test");
+
+        ToolRegistry registry = new ToolRegistry();
+        registry.register(new DemoWeatherTool());
+
+        ToolCall weatherCall = new ToolCall("getWeather", Map.of(
+                "city", "Shanghai"
+        ));
+
+        ToolCall sumCall = new ToolCall("calculateSum", Map.of(
+                "a", 100,
+                "b", 200
+        ));
+
+        ToolCallExecutor executor = ToolCallExecutor.create(registry);
+
+        ToolCallResult weatherResult = executor.execute(weatherCall);
+        System.out.println("weather tool call result:");
+        System.out.println(weatherResult.result().content());
+
+        ToolCallResult sumResult = executor.execute(sumCall);
+        System.out.println("sum tool call result:");
+        System.out.println(sumResult.result().content());
+
+        System.out.println("execute all:");
+        for (ToolCallResult result : executor.executeAll(List.of(weatherCall, sumCall))) {
+            System.out.println("- " + result.toolCall().name() + ": " + result.result().content());
+        }
     }
 }

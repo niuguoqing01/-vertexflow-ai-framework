@@ -1,0 +1,9 @@
+package com.vertexflow.ai.core.tool;
+
+import java.util.Map;
+
+public record ToolCall(
+        String name,
+        Map<String, Object> arguments
+) {
+}
