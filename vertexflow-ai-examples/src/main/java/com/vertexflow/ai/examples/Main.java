@@ -44,6 +44,7 @@ import com.vertexflow.ai.core.tool.AgentOptions;
 import com.vertexflow.ai.core.exception.AgentException;
 import com.vertexflow.ai.rag.QdrantVectorStore;
 import com.vertexflow.ai.rag.PdfDocumentLoader;
+import com.vertexflow.ai.rag.UrlDocumentLoader;
 
 import java.util.List;
 import java.util.Map;
@@ -109,6 +110,7 @@ public class Main {
         testToolFailurePropagation();
         testQdrantVectorStore(model);
         testPdfDocumentLoader(model);
+        testUrlDocumentLoader(model);
     }
 
     private static void testPrompt() {
@@ -973,6 +975,40 @@ public class Main {
         rag.addDocument(document);
 
         RagAnswer answer = rag.askWithSources("VertexFlow AI Framework 支持哪些能力？");
+
+        System.out.println("answer:");
+        System.out.println(answer.content());
+
+        System.out.println("sources:");
+        for (RagSource source : answer.sources()) {
+            System.out.println("- documentId: " + source.documentId());
+            System.out.println("  chunkId: " + source.chunkId());
+            System.out.println("  score: " + source.score());
+            System.out.println("  content: " + source.content());
+        }
+    }
+
+    private static void testUrlDocumentLoader(ChatModel model) {
+        System.out.println();
+        System.out.println("[34] UrlDocumentLoader test");
+
+        Document document = UrlDocumentLoader.load("https://example.com");
+
+        System.out.println("documentId: " + document.id());
+        System.out.println("content length: " + document.content().length());
+
+        RagEngine rag = new RagEngine(
+                model,
+                new InMemoryVectorStore(new SimpleTextEmbedding(256)),
+                new MarkdownDocumentSplitter(300, 50),
+                RagOptions.defaults()
+                        .setTopK(3)
+                        .setReturnSources(true)
+        );
+
+        rag.addDocument(document);
+
+        RagAnswer answer = rag.askWithSources("这个网页主要讲了什么？");
 
         System.out.println("answer:");
         System.out.println(answer.content());
