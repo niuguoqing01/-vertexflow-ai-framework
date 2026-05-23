@@ -37,6 +37,7 @@ import com.vertexflow.ai.core.exception.AiException;
 import com.vertexflow.ai.core.log.ConsoleAiCallLogger;
 import com.vertexflow.ai.core.memory.MemoryOptions;
 import com.vertexflow.ai.model.openai.OpenAiToolCallParser;
+import com.vertexflow.ai.core.tool.SimpleToolAgent;
 
 import java.util.List;
 import java.util.Map;
@@ -95,6 +96,7 @@ public class Main {
         testToolCallExecutor();
         testOpenAiToolCallParser();
         testToolChatModel(model);
+        testSimpleToolAgent(model);
     }
 
     private static void testPrompt() {
@@ -778,5 +780,24 @@ public class Main {
         for (ToolCallResult result : executor.executeAll(toolCalls)) {
             System.out.println("- " + result.toolCall().name() + ": " + result.result().content());
         }
+    }
+
+    private static void testSimpleToolAgent(ChatModel model) {
+        System.out.println();
+        System.out.println("[27] SimpleToolAgent test");
+
+        ToolRegistry registry = new ToolRegistry();
+        registry.register(new DemoWeatherTool());
+
+        SimpleToolAgent agent = SimpleToolAgent.builder()
+                .chatModel(model)
+                .toolRegistry(registry)
+                .toolCallParser(new OpenAiToolCallParser())
+                .build();
+
+        String answer = agent.chat("Use the getWeather tool to get the weather in Beijing, then answer me.");
+
+        System.out.println("agent answer:");
+        System.out.println(answer);
     }
 }
