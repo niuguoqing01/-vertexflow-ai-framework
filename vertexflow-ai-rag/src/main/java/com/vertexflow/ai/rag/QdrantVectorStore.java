@@ -28,6 +28,28 @@ public class QdrantVectorStore implements VectorStore {
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
+    @Override
+    public boolean exists(String chunkId) {
+        if (chunkId == null || chunkId.isBlank()) {
+            return false;
+        }
+
+        try {
+            String pointId = toPointId(chunkId);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url + "/collections/" + collectionName + "/points/" + pointId))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            return response.statusCode() == 200;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     private QdrantVectorStore(Builder builder) {
         this.url = removeTrailingSlash(builder.url);
         this.collectionName = builder.collectionName;

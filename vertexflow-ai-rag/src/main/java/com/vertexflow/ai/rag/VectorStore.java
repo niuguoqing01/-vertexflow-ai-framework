@@ -7,4 +7,8 @@ public interface VectorStore {
     void add(List<DocumentChunk> chunks);
 
     List<VectorSearchResult> search(String query, int topK);
+
+    default boolean exists(String chunkId) {
+        return false;
+    }
 }

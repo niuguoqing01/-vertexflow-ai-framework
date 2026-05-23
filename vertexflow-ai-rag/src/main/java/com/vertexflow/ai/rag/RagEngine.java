@@ -60,7 +60,16 @@ public class RagEngine {
 
     public void addDocument(Document document) {
         List<DocumentChunk> chunks = splitter.split(document);
-        vectorStore.add(chunks);
+
+        List<DocumentChunk> newChunks = chunks.stream()
+                .filter(chunk -> !vectorStore.exists(chunk.id()))
+                .toList();
+
+        if (newChunks.isEmpty()) {
+            return;
+        }
+
+        vectorStore.add(newChunks);
     }
 
     public String ask(String question) {

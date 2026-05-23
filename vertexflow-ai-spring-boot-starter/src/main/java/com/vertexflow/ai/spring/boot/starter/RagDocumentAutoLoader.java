@@ -31,6 +31,8 @@ public class RagDocumentAutoLoader implements ApplicationRunner {
             ragEngine.addDocument(document);
         }
 
+        System.out.println("[VertexFlow AI] RAG documents have been added with duplicate chunk protection.");
+
         if (!documents.isEmpty()) {
             System.out.println("[VertexFlow AI] Auto loaded RAG documents.");
             System.out.println("[VertexFlow AI] Document count: " + documents.size());

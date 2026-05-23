@@ -14,6 +14,16 @@ public class InMemoryVectorStore implements VectorStore {
     private final EmbeddingModel embeddingModel;
     private final List<VectorItem> items = new ArrayList<>();
 
+    @Override
+    public boolean exists(String chunkId) {
+        if (chunkId == null || chunkId.isBlank()) {
+            return false;
+        }
+
+        return items.stream()
+                .anyMatch(item -> item.chunk().id().equals(chunkId));
+    }
+
     public InMemoryVectorStore(EmbeddingModel embeddingModel) {
         this.embeddingModel = embeddingModel;
     }
