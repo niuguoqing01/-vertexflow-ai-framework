@@ -35,6 +35,9 @@ import com.vertexflow.ai.core.chat.ChatResponse;
 import com.vertexflow.ai.core.exception.AiException;
 import com.vertexflow.ai.core.log.ConsoleAiCallLogger;
 import com.vertexflow.ai.core.memory.MemoryOptions;
+import com.vertexflow.ai.core.tool.ToolDefinition;
+import com.vertexflow.ai.core.tool.ToolRegistry;
+import com.vertexflow.ai.core.tool.ToolResult;
 
 import java.util.List;
 import java.util.Map;
@@ -88,6 +91,7 @@ public class Main {
         testAiException();
         testAiClientMemory(model);
         testMemoryOptions();
+        testToolCalling();
     }
 
     private static void testPrompt() {
@@ -581,5 +585,35 @@ public class Main {
         memoryByOptions.add("memory-options-user-2", ChatMessage.user("what is my first message?"));
 
         System.out.println("memoryByOptions size: " + memoryByOptions.get("memory-options-user-2").size());
+    }
+
+    private static void testToolCalling() {
+        System.out.println();
+        System.out.println("[22] Tool Calling test");
+
+        ToolRegistry registry = new ToolRegistry();
+        registry.register(new DemoWeatherTool());
+
+        System.out.println("registered tools:");
+        for (ToolDefinition definition : registry.list()) {
+            System.out.println("- name: " + definition.name());
+            System.out.println("  description: " + definition.description());
+            System.out.println("  parameters: " + definition.parameters());
+        }
+
+        ToolResult weatherResult = registry.execute("getWeather", Map.of(
+                "city", "Beijing"
+        ));
+
+        System.out.println("weather result:");
+        System.out.println(weatherResult.content());
+
+        ToolResult sumResult = registry.execute("calculateSum", Map.of(
+                "a", 10,
+                "b", 20
+        ));
+
+        System.out.println("sum result:");
+        System.out.println(sumResult.content());
     }
 }
