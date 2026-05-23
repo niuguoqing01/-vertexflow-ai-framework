@@ -15,12 +15,48 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import com.vertexflow.ai.rag.FixedSizeDocumentSplitter;
+import com.vertexflow.ai.rag.InMemoryVectorStore;
+import com.vertexflow.ai.rag.RagEngine;
+import com.vertexflow.ai.rag.RagOptions;
+import com.vertexflow.ai.rag.SimpleTextEmbedding;
+import com.vertexflow.ai.rag.VectorStore;
 
 @AutoConfiguration
 @ConditionalOnClass(AiClient.class)
 @EnableConfigurationProperties(VertexFlowAiProperties.class)
 @ConditionalOnProperty(prefix = "vertexflow.ai", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class VertexFlowAiAutoConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "vertexflow.ai.rag", name = "enabled", havingValue = "true")
+    public VectorStore vectorStore(VertexFlowAiProperties properties) {
+        return new InMemoryVectorStore(new SimpleTextEmbedding(256));
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "vertexflow.ai.rag", name = "enabled", havingValue = "true")
+    public RagEngine ragEngine(
+            ChatModel chatModel,
+            VectorStore vectorStore,
+            VertexFlowAiProperties properties
+    ) {
+        RagOptions options = RagOptions.defaults()
+                .setTopK(properties.getRag().getTopK())
+                .setReturnSources(properties.getRag().isReturnSources());
+
+        return new RagEngine(
+                chatModel,
+                vectorStore,
+                new FixedSizeDocumentSplitter(
+                        properties.getRag().getChunkSize(),
+                        properties.getRag().getOverlap()
+                ),
+                options
+        );
+    }
 
     @Bean
     @ConditionalOnMissingBean

@@ -15,3 +15,9 @@ vertexflow:
       enabled: true
       max-messages: 10
       conversation-id: spring-demo-user
+    rag:
+      enabled: true
+      top-k: 3
+      return-sources: true
+      chunk-size: 300
+      overlap: 50

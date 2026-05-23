@@ -14,6 +14,16 @@ public class VertexFlowAiProperties {
     private Integer maxTokens = 2048;
     private boolean consoleLog = false;
     private Memory memory = new Memory();
+    private Rag rag = new Rag();
+
+    public Rag getRag() {
+        return rag;
+    }
+
+    public VertexFlowAiProperties setRag(Rag rag) {
+        this.rag = rag;
+        return this;
+    }
 
     public boolean isEnabled() {
         return enabled;
@@ -126,6 +136,60 @@ public class VertexFlowAiProperties {
 
         public Memory setConversationId(String conversationId) {
             this.conversationId = conversationId;
+            return this;
+        }
+    }
+
+    public static class Rag {
+
+        private boolean enabled = false;
+        private int topK = 3;
+        private boolean returnSources = true;
+        private int chunkSize = 300;
+        private int overlap = 50;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public Rag setEnabled(boolean enabled) {
+            this.enabled = enabled;
+            return this;
+        }
+
+        public int getTopK() {
+            return topK;
+        }
+
+        public Rag setTopK(int topK) {
+            this.topK = topK;
+            return this;
+        }
+
+        public boolean isReturnSources() {
+            return returnSources;
+        }
+
+        public Rag setReturnSources(boolean returnSources) {
+            this.returnSources = returnSources;
+            return this;
+        }
+
+        public int getChunkSize() {
+            return chunkSize;
+        }
+
+        public Rag setChunkSize(int chunkSize) {
+            this.chunkSize = chunkSize;
+            return this;
+        }
+
+        public int getOverlap() {
+            return overlap;
+        }
+
+        public Rag setOverlap(int overlap) {
+            this.overlap = overlap;
             return this;
         }
     }
