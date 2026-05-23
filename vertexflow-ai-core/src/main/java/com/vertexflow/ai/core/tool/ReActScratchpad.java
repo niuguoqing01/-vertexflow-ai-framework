@@ -1,5 +1,7 @@
 package com.vertexflow.ai.core.tool;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -8,6 +10,7 @@ public class ReActScratchpad {
 
     private final List<ReActScratchpadStep> steps = new ArrayList<>();
     private final List<String> rawMessages = new ArrayList<>();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public void addRawMessage(String message) {
         if (message != null && !message.isBlank()) {
@@ -49,7 +52,9 @@ public class ReActScratchpad {
             }
 
             if (step.actionInput() != null && !step.actionInput().isEmpty()) {
-                builder.append("Action Input: ").append(step.actionInput()).append("\n");
+                builder.append("Action Input: ")
+                        .append(toJson(step.actionInput()))
+                        .append("\n");
             }
 
             if (step.observation() != null && !step.observation().isBlank()) {
@@ -60,5 +65,13 @@ public class ReActScratchpad {
         }
 
         return builder.toString();
+    }
+
+    private String toJson(Map<String, Object> value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (Exception e) {
+            return String.valueOf(value);
+        }
     }
 }

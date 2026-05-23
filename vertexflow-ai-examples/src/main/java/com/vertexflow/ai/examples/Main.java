@@ -123,6 +123,7 @@ public class Main {
         testReActAgentToolNotFound(model);
         testReActAgentFailureInference(model);
         testReActScratchpad(model);
+        testReActScratchpadJsonRender();
     }
 
     private static void testPrompt() {
@@ -1354,5 +1355,23 @@ public class Main {
             System.out.println("  name: " + step.name());
             System.out.println("  content: " + step.content());
         }
+    }
+
+    private static void testReActScratchpadJsonRender() {
+        System.out.println();
+        System.out.println("[44] ReActScratchpad JSON Render test");
+
+        ReActScratchpad scratchpad = new ReActScratchpad();
+
+        scratchpad.addStep(
+                "我需要查询北京天气。",
+                "getWeather",
+                Map.of("city", "Beijing"),
+                "Beijing is sunny today."
+        );
+
+        String rendered = scratchpad.render();
+
+        System.out.println(rendered);
     }
 }
