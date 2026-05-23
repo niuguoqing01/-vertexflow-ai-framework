@@ -33,6 +33,8 @@ import com.vertexflow.ai.rag.QdrantVectorStore;
 import com.vertexflow.ai.core.tool.ReActAgent;
 import com.vertexflow.ai.core.tool.ReActAgentOptions;
 import com.vertexflow.ai.memory.RedisChatMemory;
+import org.springframework.beans.factory.ObjectProvider;
+import javax.sql.DataSource;
 
 
 import java.lang.reflect.Method;
@@ -176,7 +178,8 @@ public class VertexFlowAiAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "vertexflow.ai.memory", name = "enabled", havingValue = "true")
-    public ChatMemory chatMemory(VertexFlowAiProperties properties) {
+    public ChatMemory chatMemory(VertexFlowAiProperties properties,
+                                 ObjectProvider<DataSource> dataSourceProvider) {
         String type = properties.getMemory().getType();
 
         if ("redis".equalsIgnoreCase(type)) {
@@ -191,14 +194,22 @@ public class VertexFlowAiAutoConfiguration {
                     .build();
         }
         if ("jdbc".equalsIgnoreCase(type)) {
-            return JdbcChatMemory.builder()
-                    .url(properties.getMemory().getJdbc().getUrl())
-                    .username(properties.getMemory().getJdbc().getUsername())
-                    .password(properties.getMemory().getJdbc().getPassword())
+            DataSource dataSource = dataSourceProvider.getIfAvailable();
+
+            JdbcChatMemory.Builder builder = JdbcChatMemory.builder()
                     .tableName(properties.getMemory().getJdbc().getTableName())
                     .autoCreateTable(properties.getMemory().getJdbc().isAutoCreateTable())
-                    .maxMessages(properties.getMemory().getMaxMessages())
-                    .build();
+                    .maxMessages(properties.getMemory().getMaxMessages());
+
+            if (dataSource != null) {
+                builder.dataSource(dataSource);
+            } else {
+                builder.url(properties.getMemory().getJdbc().getUrl())
+                        .username(properties.getMemory().getJdbc().getUsername())
+                        .password(properties.getMemory().getJdbc().getPassword());
+            }
+
+            return builder.build();
         }
 
         return WindowChatMemory.builder()

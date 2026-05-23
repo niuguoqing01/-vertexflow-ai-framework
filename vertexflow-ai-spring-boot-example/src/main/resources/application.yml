@@ -5,6 +5,12 @@ server:
       charset: UTF-8
       enabled: true
       force: true
+spring:
+  datasource:
+    url: jdbc:h2:file:./data/vertexflow-spring-memory
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
 
 vertexflow:
   ai:

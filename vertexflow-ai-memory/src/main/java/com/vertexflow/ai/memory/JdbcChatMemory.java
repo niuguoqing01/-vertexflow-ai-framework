@@ -3,6 +3,7 @@ package com.vertexflow.ai.memory;
 import com.vertexflow.ai.core.chat.ChatMessage;
 import com.vertexflow.ai.core.chat.Role;
 import com.vertexflow.ai.core.memory.ChatMemory;
+import javax.sql.DataSource;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -17,8 +18,10 @@ public class JdbcChatMemory implements ChatMemory {
     private final String tableName;
     private final int maxMessages;
     private final boolean autoCreateTable;
+    private final DataSource dataSource;
 
     private JdbcChatMemory(Builder builder) {
+        this.dataSource = builder.dataSource;
         this.url = builder.url;
         this.username = builder.username;
         this.password = builder.password;
@@ -26,8 +29,8 @@ public class JdbcChatMemory implements ChatMemory {
         this.maxMessages = builder.maxMessages;
         this.autoCreateTable = builder.autoCreateTable;
 
-        if (url == null || url.isBlank()) {
-            throw new IllegalArgumentException("jdbc url is required");
+        if (dataSource == null && (url == null || url.isBlank())) {
+            throw new IllegalArgumentException("jdbc url or dataSource is required");
         }
 
         if (tableName == null || tableName.isBlank()) {
@@ -198,6 +201,10 @@ public class JdbcChatMemory implements ChatMemory {
     }
 
     private Connection getConnection() throws SQLException {
+        if (dataSource != null) {
+            return dataSource.getConnection();
+        }
+
         if (username == null) {
             return DriverManager.getConnection(url);
         }
@@ -213,6 +220,12 @@ public class JdbcChatMemory implements ChatMemory {
         private String tableName = "vertexflow_chat_memory";
         private int maxMessages = 20;
         private boolean autoCreateTable = true;
+        private DataSource dataSource;
+
+        public Builder dataSource(DataSource dataSource) {
+            this.dataSource = dataSource;
+            return this;
+        }
 
         public Builder url(String url) {
             this.url = url;
