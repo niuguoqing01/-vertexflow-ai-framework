@@ -33,6 +33,7 @@ import com.vertexflow.ai.core.chat.ChatOptions;
 import com.vertexflow.ai.core.chat.ChatRequest;
 import com.vertexflow.ai.core.chat.ChatResponse;
 import com.vertexflow.ai.core.exception.AiException;
+import com.vertexflow.ai.core.log.ConsoleAiCallLogger;
 
 import java.util.List;
 import java.util.Map;
@@ -59,11 +60,13 @@ public class Main {
                 .apiKey(apiKey)
                 .baseUrl("https://api.deepseek.com/v1")
                 .model("deepseek-chat")
+                .callLogger(new ConsoleAiCallLogger())
                 .build();
         EmbeddingModel embeddingModel = OpenAiCompatibleEmbeddingModel.builder()
                 .apiKey(apiKey)
                 .baseUrl("https://api.deepseek.com/v1")
                 .model("text-embedding-v1")
+                .callLogger(new ConsoleAiCallLogger())
                 .build();
         testChat(model);
         testStream(model);

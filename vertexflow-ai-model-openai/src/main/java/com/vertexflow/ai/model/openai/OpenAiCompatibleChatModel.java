@@ -16,6 +16,11 @@ import java.util.List;
 import java.util.Map;
 import com.vertexflow.ai.core.exception.ModelCallException;
 import com.vertexflow.ai.core.exception.StreamCallException;
+import com.vertexflow.ai.core.exception.AiException;
+import com.vertexflow.ai.core.log.AiCallLog;
+import com.vertexflow.ai.core.log.AiCallLogger;
+import com.vertexflow.ai.core.log.AiCallType;
+import com.vertexflow.ai.core.log.NoOpAiCallLogger;
 
 @SuppressWarnings("unchecked")
 public class OpenAiCompatibleChatModel implements StreamingChatModel {
@@ -25,6 +30,7 @@ public class OpenAiCompatibleChatModel implements StreamingChatModel {
     private final String model;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
+    private final AiCallLogger callLogger;
 
     private OpenAiCompatibleChatModel(Builder builder) {
         this.apiKey = builder.apiKey;
@@ -32,17 +38,19 @@ public class OpenAiCompatibleChatModel implements StreamingChatModel {
         this.model = builder.model;
         this.httpClient = HttpClient.newHttpClient();
         this.objectMapper = new ObjectMapper();
+        this.callLogger = builder.callLogger == null ? new NoOpAiCallLogger() : builder.callLogger;
     }
 
     public static Builder builder() {
         return new Builder();
+
     }
 
     @Override
     public ChatResponse call(ChatRequest request) {
+        long startTime = System.currentTimeMillis();
+        String finalModel = request.getModel() == null ? model : request.getModel();
         try {
-            String finalModel = request.getModel() == null ? model : request.getModel();
-
             Map<String, Object> body = new LinkedHashMap<>();
             body.put("model", finalModel);
             body.put("temperature", request.getTemperature());
@@ -92,14 +100,45 @@ public class OpenAiCompatibleChatModel implements StreamingChatModel {
                     ? null
                     : root.path("usage").path("total_tokens").asInt();
 
-            return new ChatResponse(
+            ChatResponse chatResponse = new ChatResponse(
                     content,
                     finalModel,
                     new com.vertexflow.ai.core.chat.TokenUsage(inputTokens, outputTokens, totalTokens),
                     finishReason,
                     response.body()
             );
+
+            callLogger.log(AiCallLog.builder()
+                    .type(AiCallType.CHAT)
+                    .provider("openai-compatible")
+                    .model(finalModel)
+                    .success(true)
+                    .durationMs(System.currentTimeMillis() - startTime)
+                    .inputTokens(inputTokens)
+                    .outputTokens(outputTokens)
+                    .totalTokens(totalTokens)
+                    .build());
+
+            return chatResponse;
         } catch (Exception e) {
+            String errorCode = e instanceof AiException aiException
+                    ? aiException.getCode()
+                    : "UNKNOWN_ERROR";
+
+            callLogger.log(AiCallLog.builder()
+                    .type(AiCallType.CHAT)
+                    .provider("openai-compatible")
+                    .model(finalModel)
+                    .success(false)
+                    .durationMs(System.currentTimeMillis() - startTime)
+                    .errorCode(errorCode)
+                    .errorMessage(e.getMessage())
+                    .build());
+
+            if (e instanceof ModelCallException modelCallException) {
+                throw modelCallException;
+            }
+
             throw new ModelCallException("OpenAI compatible chat model call error", e);
         }
     }
@@ -108,6 +147,7 @@ public class OpenAiCompatibleChatModel implements StreamingChatModel {
         private String apiKey;
         private String baseUrl = "https://api.openai.com/v1";
         private String model = "gpt-4o-mini";
+        private AiCallLogger callLogger;
 
         public Builder apiKey(String apiKey) {
             this.apiKey = apiKey;
@@ -136,11 +176,17 @@ public class OpenAiCompatibleChatModel implements StreamingChatModel {
             }
             return new OpenAiCompatibleChatModel(this);
         }
+
+        public Builder callLogger(AiCallLogger callLogger) {
+            this.callLogger = callLogger;
+            return this;
+        }
     }
     @Override
     public void stream(ChatRequest request, ChatStreamHandler handler) {
+        long startTime = System.currentTimeMillis();
+        String finalModel = request.getModel() == null ? model : request.getModel();
         try {
-            String finalModel = request.getModel() == null ? model : request.getModel();
 
             Map<String, Object> body = new LinkedHashMap<>();
             body.put("model", finalModel);
@@ -212,6 +258,15 @@ public class OpenAiCompatibleChatModel implements StreamingChatModel {
 
                     if ("[DONE]".equals(data)) {
                         handler.onMessage(new StreamChatResponse("", finalModel, true));
+
+                        callLogger.log(AiCallLog.builder()
+                                .type(AiCallType.STREAM_CHAT)
+                                .provider("openai-compatible")
+                                .model(finalModel)
+                                .success(true)
+                                .durationMs(System.currentTimeMillis() - startTime)
+                                .build());
+
                         break;
                     }
 
@@ -225,6 +280,24 @@ public class OpenAiCompatibleChatModel implements StreamingChatModel {
                 }
             }
         } catch (Exception e) {
+            String errorCode = e instanceof AiException aiException
+                    ? aiException.getCode()
+                    : "UNKNOWN_ERROR";
+
+            callLogger.log(AiCallLog.builder()
+                    .type(AiCallType.STREAM_CHAT)
+                    .provider("openai-compatible")
+                    .model(finalModel)
+                    .success(false)
+                    .durationMs(System.currentTimeMillis() - startTime)
+                    .errorCode(errorCode)
+                    .errorMessage(e.getMessage())
+                    .build());
+
+            if (e instanceof StreamCallException streamCallException) {
+                throw streamCallException;
+            }
+
             throw new StreamCallException("OpenAI compatible streaming chat model call error", e);
         }
     }

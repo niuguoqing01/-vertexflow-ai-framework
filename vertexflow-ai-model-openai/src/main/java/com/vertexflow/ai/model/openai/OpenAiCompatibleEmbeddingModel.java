@@ -14,6 +14,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import com.vertexflow.ai.core.exception.EmbeddingException;
+import com.vertexflow.ai.core.exception.AiException;
+import com.vertexflow.ai.core.log.AiCallLog;
+import com.vertexflow.ai.core.log.AiCallLogger;
+import com.vertexflow.ai.core.log.AiCallType;
+import com.vertexflow.ai.core.log.NoOpAiCallLogger;
 
 public class OpenAiCompatibleEmbeddingModel implements EmbeddingModel {
 
@@ -22,6 +27,7 @@ public class OpenAiCompatibleEmbeddingModel implements EmbeddingModel {
     private final String model;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
+    private final AiCallLogger callLogger;
 
     private OpenAiCompatibleEmbeddingModel(Builder builder) {
         this.apiKey = builder.apiKey;
@@ -29,6 +35,7 @@ public class OpenAiCompatibleEmbeddingModel implements EmbeddingModel {
         this.model = builder.model;
         this.httpClient = HttpClient.newHttpClient();
         this.objectMapper = new ObjectMapper();
+        this.callLogger = builder.callLogger == null ? new NoOpAiCallLogger() : builder.callLogger;
     }
 
     public static Builder builder() {
@@ -37,6 +44,7 @@ public class OpenAiCompatibleEmbeddingModel implements EmbeddingModel {
 
     @Override
     public EmbeddingResponse embed(EmbeddingRequest request) {
+        long startTime = System.currentTimeMillis();
         try {
             Map<String, Object> body = new LinkedHashMap<>();
             body.put("model", model);
@@ -70,8 +78,35 @@ public class OpenAiCompatibleEmbeddingModel implements EmbeddingModel {
                     ? null
                     : root.path("usage").path("total_tokens").asInt();
 
+            callLogger.log(AiCallLog.builder()
+                    .type(AiCallType.EMBEDDING)
+                    .provider("openai-compatible")
+                    .model(model)
+                    .success(true)
+                    .durationMs(System.currentTimeMillis() - startTime)
+                    .totalTokens(tokens)
+                    .build());
+
             return new EmbeddingResponse(vector, model, tokens);
         } catch (Exception e) {
+            String errorCode = e instanceof AiException aiException
+                    ? aiException.getCode()
+                    : "UNKNOWN_ERROR";
+
+            callLogger.log(AiCallLog.builder()
+                    .type(AiCallType.EMBEDDING)
+                    .provider("openai-compatible")
+                    .model(model)
+                    .success(false)
+                    .durationMs(System.currentTimeMillis() - startTime)
+                    .errorCode(errorCode)
+                    .errorMessage(e.getMessage())
+                    .build());
+
+            if (e instanceof EmbeddingException embeddingException) {
+                throw embeddingException;
+            }
+
             throw new EmbeddingException("OpenAI compatible embedding model call error", e);
         }
     }
@@ -80,6 +115,12 @@ public class OpenAiCompatibleEmbeddingModel implements EmbeddingModel {
         private String apiKey;
         private String baseUrl = "https://api.openai.com/v1";
         private String model = "text-embedding-3-small";
+        private AiCallLogger callLogger;
+
+        public Builder callLogger(AiCallLogger callLogger) {
+            this.callLogger = callLogger;
+            return this;
+        }
 
         public Builder apiKey(String apiKey) {
             this.apiKey = apiKey;
