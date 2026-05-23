@@ -23,6 +23,9 @@ import com.vertexflow.ai.rag.RagOptions;
 import com.vertexflow.ai.rag.RagSource;
 import com.vertexflow.ai.rag.TextFileDocumentLoader;
 import com.vertexflow.ai.rag.DirectoryDocumentLoader;
+import com.vertexflow.ai.rag.FixedSizeDocumentSplitter;
+import com.vertexflow.ai.rag.DocumentSplitter;
+import com.vertexflow.ai.rag.DocumentChunk;
 
 import java.util.List;
 import java.util.Map;
@@ -63,6 +66,7 @@ public class Main {
         testRagWithSources(model);
         testDocumentLoader(model);
         testDirectoryDocumentLoader(model);
+        testDocumentSplitter();
     }
 
     private static void testPrompt() {
@@ -163,7 +167,7 @@ public class Main {
             VectorStore is used to store and search document chunks by vector similarity.
             """);
 
-        DocumentSplitter splitter = new DocumentSplitter(100, 20);
+        DocumentSplitter splitter = new FixedSizeDocumentSplitter(100, 20);
         vectorStore.add(splitter.split(document));
 
         for (VectorSearchResult result : vectorStore.search("What is VectorStore?", 3)) {
@@ -266,6 +270,24 @@ public class Main {
             System.out.println("- documentId: " + source.documentId());
             System.out.println("  score: " + source.score());
             System.out.println("  content: " + source.content());
+        }
+    }
+
+    private static void testDocumentSplitter() {
+        System.out.println();
+        System.out.println("[11] DocumentSplitter test");
+
+        DocumentSplitter splitter = new FixedSizeDocumentSplitter(80, 20);
+
+        Document document = new Document("splitter-doc-1", """
+            VertexFlow AI Framework supports pluggable document splitters.
+            FixedSizeDocumentSplitter splits text by fixed character length with overlap.
+            In the future, MarkdownDocumentSplitter and TokenDocumentSplitter can be added.
+            """);
+
+        for (DocumentChunk chunk : splitter.split(document)) {
+            System.out.println("- chunkId: " + chunk.id());
+            System.out.println("  content: " + chunk.content());
         }
     }
 }

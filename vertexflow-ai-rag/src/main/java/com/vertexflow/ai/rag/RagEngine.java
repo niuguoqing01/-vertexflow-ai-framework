@@ -20,17 +20,41 @@ public class RagEngine {
     }
 
     public RagEngine(ChatModel chatModel, EmbeddingModel embeddingModel) {
-        this(chatModel, new InMemoryVectorStore(embeddingModel), RagOptions.defaults());
+        this(
+                chatModel,
+                new InMemoryVectorStore(embeddingModel),
+                new FixedSizeDocumentSplitter(300, 50),
+                RagOptions.defaults()
+        );
     }
 
     public RagEngine(ChatModel chatModel, VectorStore vectorStore) {
-        this(chatModel, vectorStore, RagOptions.defaults());
+        this(
+                chatModel,
+                vectorStore,
+                new FixedSizeDocumentSplitter(300, 50),
+                RagOptions.defaults()
+        );
     }
 
     public RagEngine(ChatModel chatModel, VectorStore vectorStore, RagOptions options) {
+        this(
+                chatModel,
+                vectorStore,
+                new FixedSizeDocumentSplitter(300, 50),
+                options
+        );
+    }
+
+    public RagEngine(
+            ChatModel chatModel,
+            VectorStore vectorStore,
+            DocumentSplitter splitter,
+            RagOptions options
+    ) {
         this.chatModel = chatModel;
-        this.splitter = new DocumentSplitter(300, 50);
         this.vectorStore = vectorStore;
+        this.splitter = splitter == null ? new FixedSizeDocumentSplitter(300, 50) : splitter;
         this.options = options == null ? RagOptions.defaults() : options;
     }
 
