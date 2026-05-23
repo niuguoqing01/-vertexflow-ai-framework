@@ -41,6 +41,7 @@ import com.vertexflow.ai.core.tool.SimpleToolAgent;
 import com.vertexflow.ai.core.tool.AgentResponse;
 import com.vertexflow.ai.core.tool.AgentStep;
 import com.vertexflow.ai.core.tool.AgentOptions;
+import com.vertexflow.ai.core.exception.AgentException;
 
 import java.util.List;
 import java.util.Map;
@@ -102,6 +103,7 @@ public class Main {
         testSimpleToolAgent(model);
         testSimpleToolAgentTrace(model);
         testSimpleToolAgentOptions(model);
+        testAgentException(model);
     }
 
     private static void testPrompt() {
@@ -860,5 +862,27 @@ public class Main {
         System.out.println(response.answer());
 
         System.out.println("steps size: " + response.steps().size());
+    }
+
+    private static void testAgentException(ChatModel model) {
+        System.out.println();
+        System.out.println("[30] AgentException test");
+
+        ToolRegistry registry = new ToolRegistry();
+        registry.register(new DemoWeatherTool());
+
+        SimpleToolAgent agent = SimpleToolAgent.builder()
+                .chatModel(model)
+                .toolRegistry(registry)
+                .toolCallParser(new OpenAiToolCallParser())
+                .maxSteps(1)
+                .build();
+
+        try {
+            agent.run("You must call getWeather with city=Beijing, then answer.");
+        } catch (AgentException e) {
+            System.out.println("agent errorCode: " + e.getCode());
+            System.out.println("agent message: " + e.getMessage());
+        }
     }
 }

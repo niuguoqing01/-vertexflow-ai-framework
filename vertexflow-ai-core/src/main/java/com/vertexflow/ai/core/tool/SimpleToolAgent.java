@@ -6,6 +6,7 @@ import com.vertexflow.ai.core.chat.ChatRequest;
 import com.vertexflow.ai.core.chat.ChatResponse;
 import com.vertexflow.ai.core.exception.AiErrorCode;
 import com.vertexflow.ai.core.exception.AiException;
+import com.vertexflow.ai.core.exception.AgentException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,7 +59,12 @@ public class SimpleToolAgent {
         currentStep++;
         checkMaxSteps(currentStep);
 
-        List<ToolCall> toolCalls = toolCallParser.parse(response.rawResponse());
+        List<ToolCall> toolCalls;
+        try {
+            toolCalls = toolCallParser.parse(response.rawResponse());
+        } catch (Exception e) {
+            throw AgentException.toolParseError("Failed to parse tool calls from model response", e);
+        }
 
         if (toolCalls.isEmpty()) {
             String answer = response.content();
@@ -85,7 +91,13 @@ public class SimpleToolAgent {
         }
 
         ToolCallExecutor executor = ToolCallExecutor.create(toolRegistry);
-        List<ToolCallResult> results = executor.executeAll(toolCalls);
+
+        List<ToolCallResult> results;
+        try {
+            results = executor.executeAll(toolCalls);
+        } catch (Exception e) {
+            throw AgentException.toolCallError("Failed to execute tool calls", e);
+        }
 
         for (ToolCallResult result : results) {
             currentStep++;
@@ -132,15 +144,12 @@ public class SimpleToolAgent {
     }
     private void checkMaxSteps(int currentStep) {
         if (currentStep > options.getMaxSteps()) {
-            throw new AiException(
-                    AiErrorCode.UNSUPPORTED_OPERATION,
-                    "Agent max steps exceeded. maxSteps=" + options.getMaxSteps()
-            );
+            throw AgentException.maxStepsExceeded(options.getMaxSteps());
         }
     }
     private ChatResponse callWithTools(String userMessage) {
         if (!(chatModel instanceof ToolChatModel toolChatModel)) {
-            throw new AiException(AiErrorCode.UNSUPPORTED_OPERATION, "Current chatModel does not support tool chat");
+            throw AgentException.modelNotSupportTool();
         }
 
         ChatRequest chatRequest = new ChatRequest()
