@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.vertexflow.ai.spring.boot.starter.RagDocumentAutoLoader;
 import com.vertexflow.ai.core.tool.ReActAgent;
 import com.vertexflow.ai.core.tool.AgentTraceJsonExporter;
+import com.vertexflow.ai.core.chat.ChatMessage;
+import com.vertexflow.ai.core.memory.ChatMemory;
+
+import java.util.List;
 
 @RestController
 public class ChatController {
@@ -24,19 +28,22 @@ public class ChatController {
     private final ObjectProvider<SimpleToolAgent> simpleToolAgentProvider;
     private final ObjectProvider<RagDocumentAutoLoader> ragDocumentAutoLoaderProvider;
     private final ObjectProvider<ReActAgent> reActAgentProvider;
+    private final ObjectProvider<ChatMemory> chatMemoryProvider;
 
     public ChatController(
             AiClient aiClient,
             ObjectProvider<RagEngine> ragEngineProvider,
             ObjectProvider<SimpleToolAgent> simpleToolAgentProvider,
             ObjectProvider<RagDocumentAutoLoader> ragDocumentAutoLoaderProvider,
-            ObjectProvider<ReActAgent> reActAgentProvider
+            ObjectProvider<ReActAgent> reActAgentProvider,
+            ObjectProvider<ChatMemory> chatMemoryProvider
     ) {
         this.aiClient = aiClient;
         this.ragEngineProvider = ragEngineProvider;
         this.simpleToolAgentProvider = simpleToolAgentProvider;
         this.ragDocumentAutoLoaderProvider = ragDocumentAutoLoaderProvider;
         this.reActAgentProvider = reActAgentProvider;
+        this.chatMemoryProvider = chatMemoryProvider;
     }
 
     @GetMapping("/rag/reload")
@@ -224,5 +231,67 @@ public class ChatController {
         AgentResponse response = agent.run(message);
 
         return AgentTraceJsonExporter.create().toJson(response);
+    }
+
+    @GetMapping("/memory/status")
+    public String memoryStatus() {
+        ChatMemory memory = chatMemoryProvider.getIfAvailable();
+
+        if (memory == null) {
+            return "ChatMemory is not enabled. Please set vertexflow.ai.memory.enabled=true";
+        }
+
+        return """
+            Memory status:
+            enabled: true
+            implementation: %s
+            """.formatted(memory.getClass().getSimpleName());
+    }
+
+    @GetMapping("/memory/messages")
+    public String memoryMessages(@RequestParam("conversationId") String conversationId) {
+        ChatMemory memory = chatMemoryProvider.getIfAvailable();
+
+        if (memory == null) {
+            return "ChatMemory is not enabled. Please set vertexflow.ai.memory.enabled=true";
+        }
+
+        List<ChatMessage> messages = memory.get(conversationId);
+
+        StringBuilder builder = new StringBuilder();
+
+        builder.append("conversationId: ")
+                .append(conversationId)
+                .append("\n");
+
+        builder.append("messageCount: ")
+                .append(messages.size())
+                .append("\n\n");
+
+        for (ChatMessage message : messages) {
+            builder.append("- role: ")
+                    .append(message.role())
+                    .append("\n  content: ")
+                    .append(message.content())
+                    .append("\n");
+        }
+
+        return builder.toString();
+    }
+
+    @GetMapping("/memory/clear")
+    public String clearMemory(@RequestParam("conversationId") String conversationId) {
+        ChatMemory memory = chatMemoryProvider.getIfAvailable();
+
+        if (memory == null) {
+            return "ChatMemory is not enabled. Please set vertexflow.ai.memory.enabled=true";
+        }
+
+        memory.clear(conversationId);
+
+        return """
+            Memory cleared.
+            conversationId: %s
+            """.formatted(conversationId);
     }
 }
