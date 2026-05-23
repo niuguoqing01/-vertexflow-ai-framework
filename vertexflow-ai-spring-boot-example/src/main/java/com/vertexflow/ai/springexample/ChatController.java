@@ -360,4 +360,79 @@ public class ChatController {
                 "Memory cleared"
         );
     }
+
+    @GetMapping(value = "/rag/status/json", produces = "application/json;charset=UTF-8")
+    public RagStatusResponse ragStatusJson() {
+        RagDocumentAutoLoader loader = ragDocumentAutoLoaderProvider.getIfAvailable();
+
+        if (loader == null) {
+            return new RagStatusResponse(
+                    false,
+                    0,
+                    0,
+                    0,
+                    0
+            );
+        }
+
+        RagDocumentAutoLoader.RagLoadResult result = loader.lastResult();
+
+        return new RagStatusResponse(
+                true,
+                result.documentCount(),
+                result.totalChunks(),
+                result.addedChunks(),
+                result.skippedChunks()
+        );
+    }
+
+    @GetMapping(value = "/rag/reload/json", produces = "application/json;charset=UTF-8")
+    public RagReloadResponse reloadRagJson() {
+        RagDocumentAutoLoader loader = ragDocumentAutoLoaderProvider.getIfAvailable();
+
+        if (loader == null) {
+            return new RagReloadResponse(
+                    false,
+                    0,
+                    0,
+                    0,
+                    0,
+                    "RagDocumentAutoLoader is not enabled. Please set vertexflow.ai.rag.enabled=true"
+            );
+        }
+
+        RagDocumentAutoLoader.RagLoadResult result = loader.reload();
+
+        return new RagReloadResponse(
+                true,
+                result.documentCount(),
+                result.totalChunks(),
+                result.addedChunks(),
+                result.skippedChunks(),
+                "RAG reload finished"
+        );
+    }
+
+    @GetMapping(value = "/rag/delete/json", produces = "application/json;charset=UTF-8")
+    public RagDeleteResponse deleteRagDocumentJson(@RequestParam("documentId") String documentId) {
+        RagEngine ragEngine = ragEngineProvider.getIfAvailable();
+
+        if (ragEngine == null) {
+            return new RagDeleteResponse(
+                    false,
+                    documentId,
+                    0,
+                    "RagEngine is not enabled. Please set vertexflow.ai.rag.enabled=true"
+            );
+        }
+
+        int deleted = ragEngine.deleteDocument(documentId);
+
+        return new RagDeleteResponse(
+                true,
+                documentId,
+                deleted,
+                "RAG document delete finished"
+        );
+    }
 }
