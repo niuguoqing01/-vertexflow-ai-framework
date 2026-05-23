@@ -59,17 +59,30 @@ public class RagEngine {
     }
 
     public void addDocument(Document document) {
+        addDocumentWithResult(document);
+    }
+
+    public AddDocumentResult addDocumentWithResult(Document document) {
         List<DocumentChunk> chunks = splitter.split(document);
 
         List<DocumentChunk> newChunks = chunks.stream()
                 .filter(chunk -> !vectorStore.exists(chunk.id()))
                 .toList();
 
-        if (newChunks.isEmpty()) {
-            return;
+        int totalChunks = chunks.size();
+        int addedChunks = newChunks.size();
+        int skippedChunks = totalChunks - addedChunks;
+
+        if (!newChunks.isEmpty()) {
+            vectorStore.add(newChunks);
         }
 
-        vectorStore.add(newChunks);
+        return new AddDocumentResult(
+                document.id(),
+                totalChunks,
+                addedChunks,
+                skippedChunks
+        );
     }
 
     public String ask(String question) {

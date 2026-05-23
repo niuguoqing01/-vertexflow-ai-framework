@@ -45,6 +45,7 @@ import com.vertexflow.ai.core.exception.AgentException;
 import com.vertexflow.ai.rag.QdrantVectorStore;
 import com.vertexflow.ai.rag.PdfDocumentLoader;
 import com.vertexflow.ai.rag.UrlDocumentLoader;
+import com.vertexflow.ai.rag.AddDocumentResult;
 
 import java.util.List;
 import java.util.Map;
@@ -111,6 +112,7 @@ public class Main {
         testQdrantVectorStore(model);
         testPdfDocumentLoader(model);
         testUrlDocumentLoader(model);
+        testAddDocumentResult(model);
     }
 
     private static void testPrompt() {
@@ -1020,5 +1022,40 @@ public class Main {
             System.out.println("  score: " + source.score());
             System.out.println("  content: " + source.content());
         }
+    }
+
+    private static void testAddDocumentResult(ChatModel model) {
+        System.out.println();
+        System.out.println("[35] AddDocumentResult test");
+
+        RagEngine rag = new RagEngine(
+                model,
+                new InMemoryVectorStore(new SimpleTextEmbedding(256)),
+                new MarkdownDocumentSplitter(300, 50),
+                RagOptions.defaults()
+                        .setTopK(3)
+                        .setReturnSources(true)
+        );
+
+        Document document = new Document("add-result-doc", """
+            VertexFlow AI Framework supports ChatModel, Memory, RAG, Tool Calling and Spring Boot Starter.
+            AddDocumentResult can show total chunks, added chunks and skipped chunks.
+            """);
+
+        AddDocumentResult first = rag.addDocumentWithResult(document);
+
+        System.out.println("first add:");
+        System.out.println("documentId: " + first.documentId());
+        System.out.println("totalChunks: " + first.totalChunks());
+        System.out.println("addedChunks: " + first.addedChunks());
+        System.out.println("skippedChunks: " + first.skippedChunks());
+
+        AddDocumentResult second = rag.addDocumentWithResult(document);
+
+        System.out.println("second add:");
+        System.out.println("documentId: " + second.documentId());
+        System.out.println("totalChunks: " + second.totalChunks());
+        System.out.println("addedChunks: " + second.addedChunks());
+        System.out.println("skippedChunks: " + second.skippedChunks());
     }
 }

@@ -6,6 +6,7 @@ import com.vertexflow.ai.rag.RagEngine;
 import com.vertexflow.ai.rag.UrlDocumentLoader;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import com.vertexflow.ai.rag.AddDocumentResult;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,15 +28,30 @@ public class RagDocumentAutoLoader implements ApplicationRunner {
         loadLocalDocuments(documents);
         loadUrlDocuments(documents);
 
-        for (Document document : documents) {
-            ragEngine.addDocument(document);
-        }
+        int totalChunks = 0;
+        int addedChunks = 0;
+        int skippedChunks = 0;
 
-        System.out.println("[VertexFlow AI] RAG documents have been added with duplicate chunk protection.");
+        for (Document document : documents) {
+            AddDocumentResult result = ragEngine.addDocumentWithResult(document);
+
+            totalChunks += result.totalChunks();
+            addedChunks += result.addedChunks();
+            skippedChunks += result.skippedChunks();
+
+            System.out.println("[VertexFlow AI] RAG document loaded: "
+                    + result.documentId()
+                    + ", totalChunks=" + result.totalChunks()
+                    + ", addedChunks=" + result.addedChunks()
+                    + ", skippedChunks=" + result.skippedChunks());
+        }
 
         if (!documents.isEmpty()) {
             System.out.println("[VertexFlow AI] Auto loaded RAG documents.");
             System.out.println("[VertexFlow AI] Document count: " + documents.size());
+            System.out.println("[VertexFlow AI] Total chunks: " + totalChunks);
+            System.out.println("[VertexFlow AI] Added chunks: " + addedChunks);
+            System.out.println("[VertexFlow AI] Skipped chunks: " + skippedChunks);
         }
     }
 
