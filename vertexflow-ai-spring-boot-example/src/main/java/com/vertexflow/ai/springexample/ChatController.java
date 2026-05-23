@@ -17,6 +17,9 @@ import com.vertexflow.ai.core.tool.ReActAgent;
 import com.vertexflow.ai.core.tool.AgentTraceJsonExporter;
 import com.vertexflow.ai.core.chat.ChatMessage;
 import com.vertexflow.ai.core.memory.ChatMemory;
+import com.vertexflow.ai.core.chat.ChatMessage;
+import com.vertexflow.ai.core.memory.ChatMemory;
+import java.util.List;
 
 import java.util.List;
 
@@ -293,5 +296,68 @@ public class ChatController {
             Memory cleared.
             conversationId: %s
             """.formatted(conversationId);
+    }
+
+    @GetMapping(value = "/memory/status/json", produces = "application/json;charset=UTF-8")
+    public MemoryStatusResponse memoryStatusJson() {
+        ChatMemory memory = chatMemoryProvider.getIfAvailable();
+
+        if (memory == null) {
+            return new MemoryStatusResponse(false, null);
+        }
+
+        return new MemoryStatusResponse(
+                true,
+                memory.getClass().getSimpleName()
+        );
+    }
+
+    @GetMapping(value = "/memory/messages/json", produces = "application/json;charset=UTF-8")
+    public MemoryMessagesResponse memoryMessagesJson(@RequestParam("conversationId") String conversationId) {
+        ChatMemory memory = chatMemoryProvider.getIfAvailable();
+
+        if (memory == null) {
+            return new MemoryMessagesResponse(
+                    conversationId,
+                    0,
+                    List.of()
+            );
+        }
+
+        List<ChatMessage> messages = memory.get(conversationId);
+
+        List<MemoryMessageResponse> result = messages.stream()
+                .map(message -> new MemoryMessageResponse(
+                        String.valueOf(message.role()),
+                        message.content()
+                ))
+                .toList();
+
+        return new MemoryMessagesResponse(
+                conversationId,
+                result.size(),
+                result
+        );
+    }
+
+    @GetMapping(value = "/memory/clear/json", produces = "application/json;charset=UTF-8")
+    public MemoryClearResponse clearMemoryJson(@RequestParam("conversationId") String conversationId) {
+        ChatMemory memory = chatMemoryProvider.getIfAvailable();
+
+        if (memory == null) {
+            return new MemoryClearResponse(
+                    false,
+                    conversationId,
+                    "ChatMemory is not enabled. Please set vertexflow.ai.memory.enabled=true"
+            );
+        }
+
+        memory.clear(conversationId);
+
+        return new MemoryClearResponse(
+                true,
+                conversationId,
+                "Memory cleared"
+        );
     }
 }
