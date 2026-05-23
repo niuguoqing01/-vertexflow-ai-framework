@@ -49,6 +49,7 @@ import com.vertexflow.ai.rag.AddDocumentResult;
 import com.vertexflow.ai.core.tool.ReActAgent;
 import com.vertexflow.ai.core.tool.ReActAgentOptions;
 import com.vertexflow.ai.core.tool.AgentTraceJsonExporter;
+import com.vertexflow.ai.memory.RedisChatMemory;
 
 import java.util.List;
 import java.util.Map;
@@ -126,6 +127,7 @@ public class Main {
         testReActScratchpad(model);
         testReActScratchpadJsonRender();
         testAgentTraceJsonExporter(model);
+        testRedisChatMemory(model);
     }
 
     private static void testPrompt() {
@@ -1404,5 +1406,38 @@ public class Main {
         String json = AgentTraceJsonExporter.create().toJson(response);
 
         System.out.println(json);
+    }
+
+    private static void testRedisChatMemory(ChatModel model) {
+        System.out.println();
+        System.out.println("[46] RedisChatMemory test");
+
+        RedisChatMemory memory = RedisChatMemory.builder()
+                .host("localhost")
+                .port(6379)
+                .keyPrefix("vertexflow:test:memory")
+                .maxMessages(10)
+                .build();
+
+        String conversationId = "redis-user-001";
+
+        memory.clear(conversationId);
+
+        AiClient client = AiClient.builder()
+                .chatModel(model)
+                .memory(memory)
+                .conversationId(conversationId)
+                .system("你是一个带 Redis 记忆能力的中文 AI 助手。")
+                .build();
+
+        String first = client.chat("我叫牛国庆，我正在开发 VertexFlow AI Framework。");
+        System.out.println("first answer:");
+        System.out.println(first);
+
+        String second = client.chat("我叫什么？我正在开发什么？");
+        System.out.println("second answer:");
+        System.out.println(second);
+
+        System.out.println("memory size: " + memory.get(conversationId).size());
     }
 }

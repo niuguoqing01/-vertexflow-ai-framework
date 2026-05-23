@@ -15,5 +15,10 @@
             <artifactId>vertexflow-ai-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>5.1.5</version>
+        </dependency>
     </dependencies>
 </project>
