@@ -1,6 +1,7 @@
 package com.vertexflow.ai.memory;
 
 import com.vertexflow.ai.core.chat.ChatMessage;
+import com.vertexflow.ai.core.memory.ChatMemory;
 
 import java.util.ArrayList;
 import java.util.HashMap;

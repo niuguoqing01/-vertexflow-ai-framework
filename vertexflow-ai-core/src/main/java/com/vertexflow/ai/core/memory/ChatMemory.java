@@ -1,4 +1,4 @@
-package com.vertexflow.ai.memory;
+package com.vertexflow.ai.core.memory;
 
 import com.vertexflow.ai.core.chat.ChatMessage;
 

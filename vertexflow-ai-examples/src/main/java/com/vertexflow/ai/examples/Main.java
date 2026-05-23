@@ -85,6 +85,7 @@ public class Main {
         testChatOptions(model);
         testChatResponse(model);
         testAiException();
+        testAiClientMemory(model);
     }
 
     private static void testPrompt() {
@@ -520,5 +521,29 @@ public class Main {
             System.out.println("errorCode: " + e.getCode());
             System.out.println("message: " + e.getMessage());
         }
+    }
+
+    private static void testAiClientMemory(ChatModel model) {
+        System.out.println();
+        System.out.println("[20] AiClient Memory test");
+
+        WindowChatMemory memory = new WindowChatMemory(10);
+
+        AiClient client = AiClient.builder()
+                .chatModel(model)
+                .memory(memory)
+                .conversationId("user-001")
+                .system("You are a memory assistant. Remember user information in the conversation.")
+                .build();
+
+        String answer1 = client.chat("My name is Niu Guoqing. I am building VertexFlow AI Framework.");
+        System.out.println("answer1:");
+        System.out.println(answer1);
+
+        String answer2 = client.chat("What is my name and what am I building?");
+        System.out.println("answer2:");
+        System.out.println(answer2);
+
+        System.out.println("memory size: " + memory.get("user-001").size());
     }
 }
