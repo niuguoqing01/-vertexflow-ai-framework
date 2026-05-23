@@ -21,9 +21,11 @@ import com.vertexflow.ai.core.log.AiCallLog;
 import com.vertexflow.ai.core.log.AiCallLogger;
 import com.vertexflow.ai.core.log.AiCallType;
 import com.vertexflow.ai.core.log.NoOpAiCallLogger;
+import com.vertexflow.ai.core.tool.ToolChatModel;
+import com.vertexflow.ai.core.tool.ToolChatRequest;
 
 @SuppressWarnings("unchecked")
-public class OpenAiCompatibleChatModel implements StreamingChatModel {
+public class OpenAiCompatibleChatModel implements StreamingChatModel, ToolChatModel {
 
     private final String apiKey;
     private final String baseUrl;
@@ -31,6 +33,42 @@ public class OpenAiCompatibleChatModel implements StreamingChatModel {
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final AiCallLogger callLogger;
+
+    private Map<String, Object> buildChatBody(ChatRequest request, String finalModel) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("model", finalModel);
+
+        if (request.getOptions().getTemperature() != null) {
+            body.put("temperature", request.getOptions().getTemperature());
+        }
+
+        if (request.getOptions().getMaxTokens() != null) {
+            body.put("max_tokens", request.getOptions().getMaxTokens());
+        }
+
+        if (request.getOptions().getTopP() != null) {
+            body.put("top_p", request.getOptions().getTopP());
+        }
+
+        if (request.getOptions().getPresencePenalty() != null) {
+            body.put("presence_penalty", request.getOptions().getPresencePenalty());
+        }
+
+        if (request.getOptions().getFrequencyPenalty() != null) {
+            body.put("frequency_penalty", request.getOptions().getFrequencyPenalty());
+        }
+
+        List<Map<String, String>> messages = new ArrayList<>();
+        for (ChatMessage message : request.getMessages()) {
+            Map<String, String> item = new LinkedHashMap<>();
+            item.put("role", message.role().name().toLowerCase());
+            item.put("content", message.content());
+            messages.add(item);
+        }
+
+        body.put("messages", messages);
+        return body;
+    }
 
     private OpenAiCompatibleChatModel(Builder builder) {
         this.apiKey = builder.apiKey;
@@ -299,6 +337,101 @@ public class OpenAiCompatibleChatModel implements StreamingChatModel {
             }
 
             throw new StreamCallException("OpenAI compatible streaming chat model call error", e);
+        }
+    }
+
+    @Override
+    public ChatResponse callWithTools(ToolChatRequest toolChatRequest) {
+        long startTime = System.currentTimeMillis();
+
+        ChatRequest request = toolChatRequest.getChatRequest();
+        String finalModel = request.getModel() == null ? model : request.getModel();
+
+        try {
+            Map<String, Object> body = buildChatBody(request, finalModel);
+
+            if (toolChatRequest.getTools() != null && !toolChatRequest.getTools().isEmpty()) {
+                body.put("tools", toolChatRequest.getTools());
+                body.put("tool_choice", toolChatRequest.getToolChoice());
+            }
+
+            String json = objectMapper.writeValueAsString(body);
+
+            HttpRequest httpRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + "/chat/completions"))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + apiKey)
+                    .POST(HttpRequest.BodyPublishers.ofString(json))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new ModelCallException("AI tool chat request failed. status="
+                        + response.statusCode() + ", body=" + response.body());
+            }
+
+            JsonNode root = objectMapper.readTree(response.body());
+            JsonNode choice = root.path("choices").get(0);
+
+            String content = choice.path("message").path("content").asText(null);
+
+            String finishReason = choice.path("finish_reason").isMissingNode()
+                    ? null
+                    : choice.path("finish_reason").asText(null);
+
+            Integer inputTokens = root.path("usage").path("prompt_tokens").isMissingNode()
+                    ? null
+                    : root.path("usage").path("prompt_tokens").asInt();
+
+            Integer outputTokens = root.path("usage").path("completion_tokens").isMissingNode()
+                    ? null
+                    : root.path("usage").path("completion_tokens").asInt();
+
+            Integer totalTokens = root.path("usage").path("total_tokens").isMissingNode()
+                    ? null
+                    : root.path("usage").path("total_tokens").asInt();
+
+            ChatResponse chatResponse = new ChatResponse(
+                    content,
+                    finalModel,
+                    new TokenUsage(inputTokens, outputTokens, totalTokens),
+                    finishReason,
+                    response.body()
+            );
+
+            callLogger.log(AiCallLog.builder()
+                    .type(AiCallType.CHAT)
+                    .provider("openai-compatible")
+                    .model(finalModel)
+                    .success(true)
+                    .durationMs(System.currentTimeMillis() - startTime)
+                    .inputTokens(inputTokens)
+                    .outputTokens(outputTokens)
+                    .totalTokens(totalTokens)
+                    .build());
+
+            return chatResponse;
+        } catch (Exception e) {
+            String errorCode = e instanceof AiException aiException
+                    ? aiException.getCode()
+                    : "UNKNOWN_ERROR";
+
+            callLogger.log(AiCallLog.builder()
+                    .type(AiCallType.CHAT)
+                    .provider("openai-compatible")
+                    .model(finalModel)
+                    .success(false)
+                    .durationMs(System.currentTimeMillis() - startTime)
+                    .errorCode(errorCode)
+                    .errorMessage(e.getMessage())
+                    .build());
+
+            if (e instanceof ModelCallException modelCallException) {
+                throw modelCallException;
+            }
+
+            throw new ModelCallException("OpenAI compatible tool chat model call error", e);
         }
     }
 }

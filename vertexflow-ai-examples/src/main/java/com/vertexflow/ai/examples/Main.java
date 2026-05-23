@@ -4,6 +4,7 @@ import com.vertexflow.ai.core.chat.AiClient;
 import com.vertexflow.ai.core.chat.ChatMessage;
 import com.vertexflow.ai.core.chat.ChatModel;
 import com.vertexflow.ai.core.prompt.PromptTemplate;
+import com.vertexflow.ai.core.tool.*;
 import com.vertexflow.ai.memory.WindowChatMemory;
 import com.vertexflow.ai.model.openai.OpenAiCompatibleChatModel;
 import com.vertexflow.ai.rag.Document;
@@ -35,13 +36,6 @@ import com.vertexflow.ai.core.chat.ChatResponse;
 import com.vertexflow.ai.core.exception.AiException;
 import com.vertexflow.ai.core.log.ConsoleAiCallLogger;
 import com.vertexflow.ai.core.memory.MemoryOptions;
-import com.vertexflow.ai.core.tool.ToolDefinition;
-import com.vertexflow.ai.core.tool.ToolRegistry;
-import com.vertexflow.ai.core.tool.ToolResult;
-import com.vertexflow.ai.core.tool.ToolSchemaGenerator;
-import com.vertexflow.ai.core.tool.ToolCall;
-import com.vertexflow.ai.core.tool.ToolCallExecutor;
-import com.vertexflow.ai.core.tool.ToolCallResult;
 import com.vertexflow.ai.model.openai.OpenAiToolCallParser;
 
 import java.util.List;
@@ -100,6 +94,7 @@ public class Main {
         testToolSchema();
         testToolCallExecutor();
         testOpenAiToolCallParser();
+        testToolChatModel(model);
     }
 
     private static void testPrompt() {
@@ -737,6 +732,49 @@ public class Main {
         ToolCallExecutor executor = ToolCallExecutor.create(registry);
 
         System.out.println("execute parsed tool calls:");
+        for (ToolCallResult result : executor.executeAll(toolCalls)) {
+            System.out.println("- " + result.toolCall().name() + ": " + result.result().content());
+        }
+    }
+
+    private static void testToolChatModel(ChatModel model) {
+        System.out.println();
+        System.out.println("[26] ToolChatModel test");
+
+        if (!(model instanceof ToolChatModel toolChatModel)) {
+            System.out.println("Current model does not support tool chat.");
+            return;
+        }
+
+        ToolRegistry registry = new ToolRegistry();
+        registry.register(new DemoWeatherTool());
+
+        ChatRequest chatRequest = new ChatRequest()
+                .addMessage(ChatMessage.system("You are a tool calling assistant. Use tools when needed."))
+                .addMessage(ChatMessage.user("What is the weather in Beijing?"));
+
+        ToolChatRequest request = ToolChatRequest.builder()
+                .chatRequest(chatRequest)
+                .tools(registry.openAiToolSchemas())
+                .toolChoice("auto")
+                .build();
+
+        ChatResponse response = toolChatModel.callWithTools(request);
+
+        System.out.println("finishReason: " + response.finishReason());
+        System.out.println("content: " + response.content());
+
+        OpenAiToolCallParser parser = new OpenAiToolCallParser();
+        List<ToolCall> toolCalls = parser.parse(response.rawResponse());
+
+        System.out.println("tool calls:");
+        for (ToolCall toolCall : toolCalls) {
+            System.out.println("- " + toolCall.name() + ": " + toolCall.arguments());
+        }
+
+        ToolCallExecutor executor = ToolCallExecutor.create(registry);
+
+        System.out.println("tool results:");
         for (ToolCallResult result : executor.executeAll(toolCalls)) {
             System.out.println("- " + result.toolCall().name() + ": " + result.result().content());
         }
