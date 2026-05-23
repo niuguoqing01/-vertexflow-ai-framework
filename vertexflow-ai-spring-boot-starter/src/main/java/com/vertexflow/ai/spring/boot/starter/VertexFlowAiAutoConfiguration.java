@@ -31,6 +31,7 @@ import org.springframework.context.ApplicationContext;
 import com.vertexflow.ai.rag.QdrantVectorStore;
 import com.vertexflow.ai.core.tool.ReActAgent;
 import com.vertexflow.ai.core.tool.ReActAgentOptions;
+import com.vertexflow.ai.memory.RedisChatMemory;
 
 import java.lang.reflect.Method;
 
@@ -174,6 +175,17 @@ public class VertexFlowAiAutoConfiguration {
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "vertexflow.ai.memory", name = "enabled", havingValue = "true")
     public ChatMemory chatMemory(VertexFlowAiProperties properties) {
+        String type = properties.getMemory().getType();
+
+        if ("redis".equalsIgnoreCase(type)) {
+            return RedisChatMemory.builder()
+                    .host(properties.getMemory().getRedis().getHost())
+                    .port(properties.getMemory().getRedis().getPort())
+                    .keyPrefix(properties.getMemory().getRedis().getKeyPrefix())
+                    .maxMessages(properties.getMemory().getMaxMessages())
+                    .build();
+        }
+
         return WindowChatMemory.builder()
                 .maxMessages(properties.getMemory().getMaxMessages())
                 .build();

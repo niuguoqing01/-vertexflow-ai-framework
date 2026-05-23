@@ -191,6 +191,34 @@ public class VertexFlowAiProperties {
          */
         private String conversationId = "default";
 
+        /**
+         * Memory type. Supported values: window, redis.
+         */
+        private String type = "window";
+
+        /**
+         * Redis memory configuration.
+         */
+        private Redis redis = new Redis();
+
+        public String getType() {
+            return type;
+        }
+
+        public Memory setType(String type) {
+            this.type = type;
+            return this;
+        }
+
+        public Redis getRedis() {
+            return redis;
+        }
+
+        public Memory setRedis(Redis redis) {
+            this.redis = redis;
+            return this;
+        }
+
         public boolean isEnabled() {
             return enabled;
         }
@@ -465,6 +493,51 @@ public class VertexFlowAiProperties {
 
         public Qdrant setVectorSize(int vectorSize) {
             this.vectorSize = vectorSize;
+            return this;
+        }
+    }
+
+    public static class Redis {
+
+        /**
+         * Redis host.
+         */
+        private String host = "localhost";
+
+        /**
+         * Redis port.
+         */
+        private int port = 6379;
+
+        /**
+         * Redis key prefix.
+         */
+        private String keyPrefix = "vertexflow:chat-memory";
+
+        public String getHost() {
+            return host;
+        }
+
+        public Redis setHost(String host) {
+            this.host = host;
+            return this;
+        }
+
+        public int getPort() {
+            return port;
+        }
+
+        public Redis setPort(int port) {
+            this.port = port;
+            return this;
+        }
+
+        public String getKeyPrefix() {
+            return keyPrefix;
+        }
+
+        public Redis setKeyPrefix(String keyPrefix) {
+            this.keyPrefix = keyPrefix;
             return this;
         }
     }
