@@ -42,6 +42,7 @@ import com.vertexflow.ai.core.tool.AgentResponse;
 import com.vertexflow.ai.core.tool.AgentStep;
 import com.vertexflow.ai.core.tool.AgentOptions;
 import com.vertexflow.ai.core.exception.AgentException;
+import com.vertexflow.ai.rag.QdrantVectorStore;
 
 import java.util.List;
 import java.util.Map;
@@ -105,6 +106,7 @@ public class Main {
         testSimpleToolAgentOptions(model);
         testAgentException(model);
         testToolFailurePropagation();
+        testQdrantVectorStore(model);
     }
 
     private static void testPrompt() {
@@ -904,5 +906,46 @@ public class Main {
         System.out.println("tool success: " + result.result().success());
         System.out.println("tool errorCode: " + result.result().errorCode());
         System.out.println("tool errorMessage: " + result.result().errorMessage());
+    }
+
+    private static void testQdrantVectorStore(ChatModel model) {
+        System.out.println();
+        System.out.println("[32] QdrantVectorStore test");
+
+        VectorStore vectorStore = QdrantVectorStore.builder()
+                .url("http://localhost:6333")
+                .collectionName("vertexflow_docs")
+                .vectorSize(256)
+                .embeddingModel(new SimpleTextEmbedding(256))
+                .build();
+
+        RagEngine rag = new RagEngine(
+                model,
+                vectorStore,
+                new MarkdownDocumentSplitter(300, 50),
+                RagOptions.defaults()
+                        .setTopK(3)
+                        .setReturnSources(true)
+        );
+
+        rag.addDocument(new Document("qdrant-doc-1", """
+            VertexFlow AI Framework 是一个面向 Java 开发者的轻量级 AI 应用开发框架。
+            它支持 ChatModel、StreamingChatModel、AiClient、Memory、RAG、Tool Calling、Agent 和 Spring Boot Starter。
+            QdrantVectorStore 可以将文档向量存储到 Qdrant 中，用于真实知识库检索。
+            """));
+
+        RagAnswer answer = rag.askWithSources("VertexFlow AI Framework 支持哪些能力？");
+
+        System.out.println("answer:");
+        System.out.println(answer.content());
+
+        System.out.println();
+        System.out.println("sources:");
+        for (RagSource source : answer.sources()) {
+            System.out.println("- documentId: " + source.documentId());
+            System.out.println("  chunkId: " + source.chunkId());
+            System.out.println("  score: " + source.score());
+            System.out.println("  content: " + source.content());
+        }
     }
 }
