@@ -14,6 +14,8 @@
         <module>vertexflow-ai-rag</module>
         <module>vertexflow-ai-model-openai</module>
         <module>vertexflow-ai-examples</module>
+        <module>vertexflow-ai-spring-boot-starter</module>
+        <module>vertexflow-ai-spring-boot-example</module>
     </modules>
 
     <properties>
