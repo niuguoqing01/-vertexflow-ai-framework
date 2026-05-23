@@ -27,6 +27,7 @@ import com.vertexflow.ai.rag.FixedSizeDocumentSplitter;
 import com.vertexflow.ai.rag.DocumentSplitter;
 import com.vertexflow.ai.rag.DocumentChunk;
 import com.vertexflow.ai.rag.MarkdownDocumentSplitter;
+import com.vertexflow.ai.rag.RagBuilder;
 
 import java.util.List;
 import java.util.Map;
@@ -70,6 +71,7 @@ public class Main {
         testDocumentSplitter();
         testMarkdownDocumentSplitter();
         testRagWithMarkdownSplitter(model);
+        testRagBuilder(model);
     }
 
     private static void testPrompt() {
@@ -362,6 +364,47 @@ public class Main {
             """));
 
         RagAnswer answer = rag.askWithSources("How does RagEngine work with Markdown documents?");
+
+        System.out.println("answer:");
+        System.out.println(answer.content());
+
+        System.out.println();
+        System.out.println("sources:");
+        for (RagSource source : answer.sources()) {
+            System.out.println("- documentId: " + source.documentId());
+            System.out.println("  chunkId: " + source.chunkId());
+            System.out.println("  score: " + source.score());
+            System.out.println("  content: " + source.content());
+        }
+    }
+
+    private static void testRagBuilder(ChatModel model) {
+        System.out.println();
+        System.out.println("[14] RagBuilder test");
+
+        RagEngine rag = RagBuilder.create()
+                .chatModel(model)
+                .embeddingModel(new SimpleTextEmbedding(256))
+                .splitter(new MarkdownDocumentSplitter(300, 50))
+                .options(RagOptions.defaults().setTopK(2).setReturnSources(true))
+                .build();
+
+        rag.addDocument(new Document("builder-doc-1", """
+            # VertexFlow AI Framework
+
+            VertexFlow AI Framework is a lightweight AI framework for Java developers.
+
+            ## Builder API
+
+            RagBuilder provides a fluent API for creating RagEngine.
+            It allows developers to configure ChatModel, EmbeddingModel, VectorStore, DocumentSplitter and RagOptions.
+
+            ## Goal
+
+            The goal is to make Java AI development simple, clean and framework-like.
+            """));
+
+        RagAnswer answer = rag.askWithSources("What does RagBuilder provide?");
 
         System.out.println("answer:");
         System.out.println(answer.content());
