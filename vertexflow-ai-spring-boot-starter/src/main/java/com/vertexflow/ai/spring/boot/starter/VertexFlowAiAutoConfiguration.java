@@ -28,6 +28,7 @@ import com.vertexflow.ai.core.tool.ToolRegistry;
 import com.vertexflow.ai.model.openai.OpenAiToolCallParser;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationContext;
+import com.vertexflow.ai.rag.QdrantVectorStore;
 
 import java.lang.reflect.Method;
 
@@ -73,7 +74,22 @@ public class VertexFlowAiAutoConfiguration {
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "vertexflow.ai.rag", name = "enabled", havingValue = "true")
     public VectorStore vectorStore(VertexFlowAiProperties properties) {
-        return new InMemoryVectorStore(new SimpleTextEmbedding(256));
+        SimpleTextEmbedding embeddingModel = new SimpleTextEmbedding(
+                properties.getVectorStore().getQdrant().getVectorSize()
+        );
+
+        String type = properties.getVectorStore().getType();
+
+        if ("qdrant".equalsIgnoreCase(type)) {
+            return QdrantVectorStore.builder()
+                    .url(properties.getVectorStore().getQdrant().getUrl())
+                    .collectionName(properties.getVectorStore().getQdrant().getCollectionName())
+                    .vectorSize(properties.getVectorStore().getQdrant().getVectorSize())
+                    .embeddingModel(embeddingModel)
+                    .build();
+        }
+
+        return new InMemoryVectorStore(embeddingModel);
     }
 
     @Bean

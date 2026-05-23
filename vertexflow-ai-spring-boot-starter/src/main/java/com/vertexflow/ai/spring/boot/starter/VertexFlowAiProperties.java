@@ -60,6 +60,17 @@ public class VertexFlowAiProperties {
      */
     private Tool tool = new Tool();
 
+    private VectorStore vectorStore = new VectorStore();
+
+    public VectorStore getVectorStore() {
+        return vectorStore;
+    }
+
+    public VertexFlowAiProperties setVectorStore(VectorStore vectorStore) {
+        this.vectorStore = vectorStore;
+        return this;
+    }
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -304,6 +315,82 @@ public class VertexFlowAiProperties {
 
         public Tool setMaxSteps(int maxSteps) {
             this.maxSteps = maxSteps;
+            return this;
+        }
+    }
+
+    public static class VectorStore {
+
+        /**
+         * Vector store type. Supported values: memory, qdrant.
+         */
+        private String type = "memory";
+
+        /**
+         * Qdrant configuration.
+         */
+        private Qdrant qdrant = new Qdrant();
+
+        public String getType() {
+            return type;
+        }
+
+        public VectorStore setType(String type) {
+            this.type = type;
+            return this;
+        }
+
+        public Qdrant getQdrant() {
+            return qdrant;
+        }
+
+        public VectorStore setQdrant(Qdrant qdrant) {
+            this.qdrant = qdrant;
+            return this;
+        }
+    }
+
+    public static class Qdrant {
+
+        /**
+         * Qdrant server URL.
+         */
+        private String url = "http://localhost:6333";
+
+        /**
+         * Qdrant collection name.
+         */
+        private String collectionName = "vertexflow_docs";
+
+        /**
+         * Vector size.
+         */
+        private int vectorSize = 256;
+
+        public String getUrl() {
+            return url;
+        }
+
+        public Qdrant setUrl(String url) {
+            this.url = url;
+            return this;
+        }
+
+        public String getCollectionName() {
+            return collectionName;
+        }
+
+        public Qdrant setCollectionName(String collectionName) {
+            this.collectionName = collectionName;
+            return this;
+        }
+
+        public int getVectorSize() {
+            return vectorSize;
+        }
+
+        public Qdrant setVectorSize(int vectorSize) {
+            this.vectorSize = vectorSize;
             return this;
         }
     }
