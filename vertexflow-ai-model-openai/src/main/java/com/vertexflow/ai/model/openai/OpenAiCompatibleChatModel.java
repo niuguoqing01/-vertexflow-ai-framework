@@ -127,8 +127,26 @@ public class OpenAiCompatibleChatModel implements StreamingChatModel {
 
             Map<String, Object> body = new LinkedHashMap<>();
             body.put("model", finalModel);
-            body.put("temperature", request.getTemperature());
-            body.put("max_tokens", request.getMaxTokens());
+
+            if (request.getOptions().getTemperature() != null) {
+                body.put("temperature", request.getOptions().getTemperature());
+            }
+
+            if (request.getOptions().getMaxTokens() != null) {
+                body.put("max_tokens", request.getOptions().getMaxTokens());
+            }
+
+            if (request.getOptions().getTopP() != null) {
+                body.put("top_p", request.getOptions().getTopP());
+            }
+
+            if (request.getOptions().getPresencePenalty() != null) {
+                body.put("presence_penalty", request.getOptions().getPresencePenalty());
+            }
+
+            if (request.getOptions().getFrequencyPenalty() != null) {
+                body.put("frequency_penalty", request.getOptions().getFrequencyPenalty());
+            }
             body.put("stream", true);
 
             List<Map<String, String>> messages = new ArrayList<>();

@@ -29,6 +29,8 @@ import com.vertexflow.ai.rag.DocumentChunk;
 import com.vertexflow.ai.rag.MarkdownDocumentSplitter;
 import com.vertexflow.ai.rag.RagBuilder;
 import com.vertexflow.ai.core.VertexFlowAi;
+import com.vertexflow.ai.core.chat.ChatOptions;
+import com.vertexflow.ai.core.chat.ChatRequest;
 
 import java.util.List;
 import java.util.Map;
@@ -75,6 +77,7 @@ public class Main {
         testRagBuilder(model);
         testAiClientBuilder(model);
         testAiClientStreaming(model);
+        testChatOptions(model);
     }
 
     private static void testPrompt() {
@@ -454,5 +457,24 @@ public class Main {
                 System.out.println("[client stream finished]");
             }
         });
+    }
+
+    private static void testChatOptions(ChatModel model) {
+        System.out.println();
+        System.out.println("[17] ChatOptions test");
+
+        ChatRequest request = new ChatRequest()
+                .setOptions(ChatOptions.builder()
+                        .temperature(0.2)
+                        .maxTokens(300)
+                        .topP(0.9)
+                        .build())
+                .addMessage(ChatMessage.system("You are a concise Java AI framework assistant."))
+                .addMessage(ChatMessage.user("Explain ChatOptions in VertexFlow AI Framework in one sentence."));
+
+        String answer = model.call(request).content();
+
+        System.out.println("answer:");
+        System.out.println(answer);
     }
 }

@@ -5,17 +5,31 @@ import java.util.List;
 
 public class ChatRequest {
 
-    private String model;
+    private ChatOptions options = ChatOptions.defaults();
     private List<ChatMessage> messages = new ArrayList<>();
-    private Double temperature = 0.7;
-    private Integer maxTokens = 2048;
+
+    public ChatOptions getOptions() {
+        return options;
+    }
+
+    public ChatRequest setOptions(ChatOptions options) {
+        this.options = options == null ? ChatOptions.defaults() : options;
+        return this;
+    }
 
     public String getModel() {
-        return model;
+        return options.getModel();
     }
 
     public ChatRequest setModel(String model) {
-        this.model = model;
+        this.options = ChatOptions.builder()
+                .model(model)
+                .temperature(options.getTemperature())
+                .maxTokens(options.getMaxTokens())
+                .topP(options.getTopP())
+                .presencePenalty(options.getPresencePenalty())
+                .frequencyPenalty(options.getFrequencyPenalty())
+                .build();
         return this;
     }
 
@@ -24,7 +38,7 @@ public class ChatRequest {
     }
 
     public ChatRequest setMessages(List<ChatMessage> messages) {
-        this.messages = messages;
+        this.messages = messages == null ? new ArrayList<>() : messages;
         return this;
     }
 
@@ -34,20 +48,34 @@ public class ChatRequest {
     }
 
     public Double getTemperature() {
-        return temperature;
+        return options.getTemperature();
     }
 
     public ChatRequest setTemperature(Double temperature) {
-        this.temperature = temperature;
+        this.options = ChatOptions.builder()
+                .model(options.getModel())
+                .temperature(temperature)
+                .maxTokens(options.getMaxTokens())
+                .topP(options.getTopP())
+                .presencePenalty(options.getPresencePenalty())
+                .frequencyPenalty(options.getFrequencyPenalty())
+                .build();
         return this;
     }
 
     public Integer getMaxTokens() {
-        return maxTokens;
+        return options.getMaxTokens();
     }
 
     public ChatRequest setMaxTokens(Integer maxTokens) {
-        this.maxTokens = maxTokens;
+        this.options = ChatOptions.builder()
+                .model(options.getModel())
+                .temperature(options.getTemperature())
+                .maxTokens(maxTokens)
+                .topP(options.getTopP())
+                .presencePenalty(options.getPresencePenalty())
+                .frequencyPenalty(options.getFrequencyPenalty())
+                .build();
         return this;
     }
 }

@@ -79,9 +79,7 @@ public class AiClient {
 
     private ChatRequest mergeSystemMessages(ChatRequest request) {
         ChatRequest finalRequest = new ChatRequest()
-                .setModel(request.getModel())
-                .setTemperature(request.getTemperature())
-                .setMaxTokens(request.getMaxTokens());
+                .setOptions(request.getOptions());
 
         for (ChatMessage message : systemMessages) {
             finalRequest.addMessage(message);
