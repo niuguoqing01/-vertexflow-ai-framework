@@ -62,6 +62,8 @@ public class VertexFlowAiProperties {
 
     private VectorStore vectorStore = new VectorStore();
 
+
+
     public VectorStore getVectorStore() {
         return vectorStore;
     }
@@ -241,6 +243,20 @@ public class VertexFlowAiProperties {
          * Chunk overlap size.
          */
         private int overlap = 50;
+
+        /**
+         * Local document directory path for RAG.
+         */
+        private String documentLocation;
+
+        public String getDocumentLocation() {
+            return documentLocation;
+        }
+
+        public Rag setDocumentLocation(String documentLocation) {
+            this.documentLocation = documentLocation;
+            return this;
+        }
 
         public boolean isEnabled() {
             return enabled;

@@ -29,15 +29,7 @@ public class ChatController {
         this.ragEngineProvider = ragEngineProvider;
         this.simpleToolAgentProvider = simpleToolAgentProvider;
 
-        RagEngine ragEngine = ragEngineProvider.getIfAvailable();
 
-        if (ragEngine != null) {
-            ragEngine.addDocument(new Document("spring-demo-doc", """
-        VertexFlow AI Framework 是一个面向 Java 开发者的轻量级 AI 应用开发框架。
-        它支持 ChatModel、StreamingChatModel、AiClient、Memory、RAG、Tool Calling 和 Spring Boot Starter。
-        Spring Boot Starter 可以自动配置 AiClient、RagEngine 和 SimpleToolAgent。
-        """));
-        }
     }
 
     @GetMapping("/chat")

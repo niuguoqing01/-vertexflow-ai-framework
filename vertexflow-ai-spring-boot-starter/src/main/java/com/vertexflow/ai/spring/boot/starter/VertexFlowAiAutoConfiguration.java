@@ -40,6 +40,16 @@ public class VertexFlowAiAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "vertexflow.ai.rag", name = "enabled", havingValue = "true")
+    public RagDocumentAutoLoader ragDocumentAutoLoader(
+            RagEngine ragEngine,
+            VertexFlowAiProperties properties
+    ) {
+        return new RagDocumentAutoLoader(ragEngine, properties);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "vertexflow.ai.tool", name = "enabled", havingValue = "true")
     public ToolRegistry toolRegistry() {
         return new ToolRegistry();
