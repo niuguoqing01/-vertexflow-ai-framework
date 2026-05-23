@@ -1,16 +1,17 @@
 package com.vertexflow.ai.rag;
 
+import com.vertexflow.ai.core.exception.AiErrorCode;
+import com.vertexflow.ai.core.exception.AiException;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
-import com.vertexflow.ai.core.exception.AiErrorCode;
-import com.vertexflow.ai.core.exception.AiException;
 
 public class DirectoryDocumentLoader {
 
-    private static final Set<String> DEFAULT_EXTENSIONS = Set.of(".txt", ".md");
+    private static final Set<String> DEFAULT_EXTENSIONS = Set.of(".txt", ".md", ".pdf");
 
     private DirectoryDocumentLoader() {
     }
@@ -24,11 +25,17 @@ public class DirectoryDocumentLoader {
             Path root = Path.of(directoryPath);
 
             if (!Files.exists(root)) {
-                throw new IllegalArgumentException("Directory does not exist: " + directoryPath);
+                throw new AiException(
+                        AiErrorCode.DOCUMENT_LOAD_ERROR,
+                        "Directory does not exist: " + directoryPath
+                );
             }
 
             if (!Files.isDirectory(root)) {
-                throw new IllegalArgumentException("Path is not a directory: " + directoryPath);
+                throw new AiException(
+                        AiErrorCode.DOCUMENT_LOAD_ERROR,
+                        "Path is not a directory: " + directoryPath
+                );
             }
 
             int maxDepth = recursive ? Integer.MAX_VALUE : 1;
@@ -41,7 +48,11 @@ public class DirectoryDocumentLoader {
                         .toList();
             }
         } catch (IOException e) {
-            throw new AiException(AiErrorCode.DOCUMENT_LOAD_ERROR, "Failed to load directory: " + directoryPath, e);
+            throw new AiException(
+                    AiErrorCode.DOCUMENT_LOAD_ERROR,
+                    "Failed to load directory: " + directoryPath,
+                    e
+            );
         }
     }
 
@@ -58,6 +69,19 @@ public class DirectoryDocumentLoader {
     }
 
     private static Document toDocument(Path path) {
-        return TextFileDocumentLoader.loadFile(path.toString());
+        String fileName = path.getFileName().toString().toLowerCase();
+
+        if (fileName.endsWith(".pdf")) {
+            return PdfDocumentLoader.load(path);
+        }
+
+        if (fileName.endsWith(".txt") || fileName.endsWith(".md")) {
+            return TextFileDocumentLoader.loadFile(path.toString());
+        }
+
+        throw new AiException(
+                AiErrorCode.DOCUMENT_LOAD_ERROR,
+                "Unsupported document type: " + path
+        );
     }
 }
