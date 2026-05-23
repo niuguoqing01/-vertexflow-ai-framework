@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>VertexFlow AI Debug Dashboard</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, "Microsoft YaHei", sans-serif;
+            background: #f6f7fb;
+            color: #1f2937;
+        }
+
+        header {
+            padding: 24px 40px;
+            background: #111827;
+            color: #fff;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        header p {
+            margin: 8px 0 0;
+            color: #cbd5e1;
+        }
+
+        main {
+            padding: 32px 40px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+            border: 1px solid #e5e7eb;
+        }
+
+        .card h2 {
+            margin: 0 0 12px;
+            font-size: 20px;
+        }
+
+        .card p {
+            margin: 0 0 16px;
+            color: #6b7280;
+            line-height: 1.6;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            margin: 12px 0 6px;
+            color: #374151;
+            font-weight: 600;
+        }
+
+        input, textarea {
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+
+        button {
+            margin-top: 14px;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 10px;
+            background: #2563eb;
+            color: #fff;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        pre {
+            margin-top: 16px;
+            padding: 16px;
+            background: #0f172a;
+            color: #e5e7eb;
+            border-radius: 12px;
+            overflow: auto;
+            min-height: 100px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .full {
+            grid-column: 1 / -1;
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .row input {
+            flex: 1;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #dcfce7;
+            color: #166534;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        @media (max-width: 900px) {
+            main {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+
+            header {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>🚀 VertexFlow AI Debug Dashboard</h1>
+    <p>Chat · Memory · RAG · Agent · ReAct Trace</p>
+</header>
+
+<main>
+    <section class="card">
+        <h2>💬 Chat</h2>
+        <p>测试 AiClient 普通中文聊天能力。</p>
+
+        <label>Message</label>
+        <textarea id="chatMessage">你好，用中文介绍一下 VertexFlow AI Framework</textarea>
+
+        <button onclick="chat()">发送 Chat</button>
+        <pre id="chatResult"></pre>
+    </section>
+
+    <section class="card">
+        <h2>🧠 Memory</h2>
+        <p>测试 RedisChatMemory / WindowChatMemory 会话记忆。</p>
+
+        <label>Memory Message</label>
+        <textarea id="memoryMessage">我叫牛国庆，我正在开发 VertexFlow AI Framework</textarea>
+
+        <button onclick="memoryChat()">写入记忆</button>
+        <button onclick="memoryAsk()">询问记忆</button>
+        <button onclick="memoryStatus()">Memory 状态</button>
+        <button onclick="memoryMessages()">查看记忆</button>
+        <button onclick="memoryClear()">清空记忆</button>
+
+        <label>Conversation ID</label>
+        <input id="conversationId" value="spring-redis-user"/>
+
+        <pre id="memoryResult"></pre>
+    </section>
+
+    <section class="card">
+        <h2>📚 RAG</h2>
+        <p>测试知识库问答、重载、状态和删除。</p>
+
+        <label>Question</label>
+        <textarea id="ragQuestion">VertexFlow AI Framework 支持哪些能力？</textarea>
+
+        <button onclick="ragAsk()">RAG 问答</button>
+        <button onclick="ragStatus()">RAG 状态</button>
+        <button onclick="ragReload()">重载知识库</button>
+
+        <label>Document ID</label>
+        <input id="documentId" value="vertexflow-intro.txt"/>
+
+        <button onclick="ragDelete()">删除文档</button>
+
+        <pre id="ragResult"></pre>
+    </section>
+
+    <section class="card">
+        <h2>🤖 Agent</h2>
+        <p>测试 SimpleToolAgent 和 ReActAgent。</p>
+
+        <label>Agent Message</label>
+        <textarea id="agentMessage">查询北京天气，然后用中文回答我</textarea>
+
+        <button onclick="simpleAgent()">Simple Agent JSON</button>
+        <button onclick="reactAgent()">ReAct Agent JSON</button>
+        <button onclick="reactTrace()">ReAct Trace JSON</button>
+
+        <pre id="agentResult"></pre>
+    </section>
+
+    <section class="card full">
+        <h2>✅ API 状态</h2>
+        <p>
+            <span class="badge">Spring Boot Example</span>
+            当前页面用于快速验证 VertexFlow AI Framework 的核心能力。
+        </p>
+
+        <button onclick="healthCheck()">一键检查 Memory / RAG 状态</button>
+        <pre id="healthResult"></pre>
+    </section>
+</main>
+
+<script>
+    async function requestText(url) {
+        const res = await fetch(url);
+        return await res.text();
+    }
+
+    async function requestJson(url) {
+        const res = await fetch(url);
+        const data = await res.json();
+        return JSON.stringify(data, null, 2);
+    }
+
+    function encode(value) {
+        return encodeURIComponent(value || "");
+    }
+
+    async function chat() {
+        const message = document.getElementById("chatMessage").value;
+        document.getElementById("chatResult").textContent =
+            await requestText("/chat?message=" + encode(message));
+    }
+
+    async function memoryChat() {
+        const message = document.getElementById("memoryMessage").value;
+        document.getElementById("memoryResult").textContent =
+            await requestText("/memory-chat?message=" + encode(message));
+    }
+
+    async function memoryAsk() {
+        document.getElementById("memoryResult").textContent =
+            await requestText("/memory-chat?message=" + encode("我叫什么，我正在开发什么项目？"));
+    }
+
+    async function memoryStatus() {
+        document.getElementById("memoryResult").textContent =
+            await requestJson("/memory/status/json");
+    }
+
+    async function memoryMessages() {
+        const conversationId = document.getElementById("conversationId").value;
+        document.getElementById("memoryResult").textContent =
+            await requestJson("/memory/messages/json?conversationId=" + encode(conversationId));
+    }
+
+    async function memoryClear() {
+        const conversationId = document.getElementById("conversationId").value;
+        document.getElementById("memoryResult").textContent =
+            await requestJson("/memory/clear/json?conversationId=" + encode(conversationId));
+    }
+
+    async function ragAsk() {
+        const question = document.getElementById("ragQuestion").value;
+        document.getElementById("ragResult").textContent =
+            await requestText("/rag?question=" + encode(question));
+    }
+
+    async function ragStatus() {
+        document.getElementById("ragResult").textContent =
+            await requestJson("/rag/status/json");
+    }
+
+    async function ragReload() {
+        document.getElementById("ragResult").textContent =
+            await requestJson("/rag/reload/json");
+    }
+
+    async function ragDelete() {
+        const documentId = document.getElementById("documentId").value;
+        document.getElementById("ragResult").textContent =
+            await requestJson("/rag/delete/json?documentId=" + encode(documentId));
+    }
+
+    async function simpleAgent() {
+        const message = document.getElementById("agentMessage").value;
+        document.getElementById("agentResult").textContent =
+            await requestJson("/agent/json?message=" + encode(message));
+    }
+
+    async function reactAgent() {
+        const message = document.getElementById("agentMessage").value;
+        document.getElementById("agentResult").textContent =
+            await requestJson("/agent/react/json?message=" + encode(message));
+    }
+
+    async function reactTrace() {
+        const message = document.getElementById("agentMessage").value;
+        document.getElementById("agentResult").textContent =
+            await requestJson("/agent/react/trace?message=" + encode(message));
+    }
+
+    async function healthCheck() {
+        const memory = await requestJson("/memory/status/json");
+        const rag = await requestJson("/rag/status/json");
+
+        document.getElementById("healthResult").textContent =
+            "Memory Status:\n" + memory + "\n\nRAG Status:\n" + rag;
+    }
+</script>
+</body>
+</html>
