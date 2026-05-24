@@ -23,6 +23,8 @@ import com.vertexflow.ai.core.tool.AgentResponse;
 import com.vertexflow.ai.core.tool.AgentStep;
 import com.vertexflow.ai.core.tool.ReActAgent;
 import com.vertexflow.ai.core.tool.SimpleToolAgent;
+import com.vertexflow.ai.memory.JdbcChatMemory;
+import java.util.List;
 import java.util.List;
 import java.util.List;
 
@@ -506,6 +508,102 @@ public class ChatController {
                 response.answer(),
                 steps.size(),
                 steps
+        );
+    }
+
+    @GetMapping(value = "/memory/conversations/json", produces = "application/json;charset=UTF-8")
+    public MemoryConversationListResponse memoryConversationsJson() {
+        ChatMemory memory = chatMemoryProvider.getIfAvailable();
+
+        if (memory == null) {
+            return new MemoryConversationListResponse(
+                    false,
+                    null,
+                    0,
+                    List.of(),
+                    "ChatMemory is not enabled"
+            );
+        }
+
+        if (!(memory instanceof JdbcChatMemory jdbcMemory)) {
+            return new MemoryConversationListResponse(
+                    false,
+                    memory.getClass().getSimpleName(),
+                    0,
+                    List.of(),
+                    "Current ChatMemory does not support listing conversation ids"
+            );
+        }
+
+        List<String> conversationIds = jdbcMemory.listConversationIds();
+
+        return new MemoryConversationListResponse(
+                true,
+                memory.getClass().getSimpleName(),
+                conversationIds.size(),
+                conversationIds,
+                "Conversation ids loaded"
+        );
+    }
+
+    @GetMapping(value = "/memory/count/json", produces = "application/json;charset=UTF-8")
+    public MemoryCountResponse memoryCountJson(@RequestParam("conversationId") String conversationId) {
+        ChatMemory memory = chatMemoryProvider.getIfAvailable();
+
+        if (memory == null) {
+            return new MemoryCountResponse(
+                    false,
+                    conversationId,
+                    0,
+                    "ChatMemory is not enabled"
+            );
+        }
+
+        if (!(memory instanceof JdbcChatMemory jdbcMemory)) {
+            return new MemoryCountResponse(
+                    false,
+                    conversationId,
+                    0,
+                    "Current ChatMemory does not support count"
+            );
+        }
+
+        int count = jdbcMemory.count(conversationId);
+
+        return new MemoryCountResponse(
+                true,
+                conversationId,
+                count,
+                "Memory count loaded"
+        );
+    }
+
+    @GetMapping(value = "/memory/clear-all/json", produces = "application/json;charset=UTF-8")
+    public MemoryClearAllResponse clearAllMemoryJson() {
+        ChatMemory memory = chatMemoryProvider.getIfAvailable();
+
+        if (memory == null) {
+            return new MemoryClearAllResponse(
+                    false,
+                    0,
+                    "ChatMemory is not enabled"
+            );
+        }
+
+        if (!(memory instanceof JdbcChatMemory jdbcMemory)) {
+            return new MemoryClearAllResponse(
+                    false,
+                    0,
+                    "Current ChatMemory does not support clear all"
+            );
+        }
+
+        int deleted = jdbcMemory.deleteAll();
+
+        return new MemoryClearAllResponse(
+                true,
+                deleted,
+                "All JDBC memory messages cleared"
         );
     }
 }

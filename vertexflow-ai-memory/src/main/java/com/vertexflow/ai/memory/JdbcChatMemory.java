@@ -261,4 +261,85 @@ public class JdbcChatMemory implements ChatMemory {
             return new JdbcChatMemory(this);
         }
     }
+
+    public int count(String conversationId) {
+        if (conversationId == null || conversationId.isBlank()) {
+            return 0;
+        }
+
+        String sql = """
+            SELECT COUNT(*) AS total
+            FROM %s
+            WHERE conversation_id = ?
+            """.formatted(tableName);
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, conversationId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getInt("total");
+                }
+            }
+
+            return 0;
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to count JDBC chat memory", e);
+        }
+    }
+
+    public List<String> listConversationIds() {
+        String sql = """
+            SELECT DISTINCT conversation_id
+            FROM %s
+            ORDER BY conversation_id ASC
+            """.formatted(tableName);
+
+        List<String> conversationIds = new ArrayList<>();
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+
+            while (resultSet.next()) {
+                conversationIds.add(resultSet.getString("conversation_id"));
+            }
+
+            return conversationIds;
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to list JDBC conversation ids", e);
+        }
+    }
+
+    public int deleteAll() {
+        String countSql = """
+            SELECT COUNT(*) AS total
+            FROM %s
+            """.formatted(tableName);
+
+        String deleteSql = """
+            DELETE FROM %s
+            """.formatted(tableName);
+
+        try (Connection connection = getConnection()) {
+            int total = 0;
+
+            try (PreparedStatement countStatement = connection.prepareStatement(countSql);
+                 ResultSet resultSet = countStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    total = resultSet.getInt("total");
+                }
+            }
+
+            try (PreparedStatement deleteStatement = connection.prepareStatement(deleteSql)) {
+                deleteStatement.executeUpdate();
+            }
+
+            return total;
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to delete all JDBC chat memory", e);
+        }
+    }
 }
