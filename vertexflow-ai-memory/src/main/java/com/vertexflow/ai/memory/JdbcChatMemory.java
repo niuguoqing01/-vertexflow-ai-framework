@@ -36,6 +36,7 @@ public class JdbcChatMemory implements ChatMemory {
         if (tableName == null || tableName.isBlank()) {
             throw new IllegalArgumentException("tableName is required");
         }
+        validateTableName(tableName);
 
         if (maxMessages <= 0) {
             throw new IllegalArgumentException("maxMessages must be greater than 0");
@@ -385,6 +386,10 @@ public class JdbcChatMemory implements ChatMemory {
         return "TIMESTAMP NOT NULL";
     }
 
+    private String indexName(String columnName) {
+        return "idx_" + tableName + "_" + columnName;
+    }
+
     private void createIndexesIfNecessary() {
         try (Connection connection = getConnection()) {
             String databaseProductName = connection.getMetaData().getDatabaseProductName();
@@ -392,14 +397,14 @@ public class JdbcChatMemory implements ChatMemory {
             createIndexIfNecessary(
                     connection,
                     databaseProductName,
-                    "idx_" + tableName + "_conversation_id",
+                    indexName("conversation_id"),
                     "conversation_id"
             );
 
             createIndexIfNecessary(
                     connection,
                     databaseProductName,
-                    "idx_" + tableName + "_created_at",
+                    indexName("created_at"),
                     "created_at"
             );
         } catch (Exception e) {
@@ -447,5 +452,14 @@ public class JdbcChatMemory implements ChatMemory {
         }
 
         return false;
+    }
+
+    private void validateTableName(String tableName) {
+        if (!tableName.matches("^[a-zA-Z_][a-zA-Z0-9_]*$")) {
+            throw new IllegalArgumentException(
+                    "Invalid tableName: " + tableName +
+                            ". Only letters, numbers and underscores are allowed, and it must not start with a number."
+            );
+        }
     }
 }
