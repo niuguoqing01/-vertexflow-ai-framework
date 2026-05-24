@@ -71,4 +71,12 @@ public class JdbcMemoryDialect {
     private boolean isH2() {
         return databaseProductName.contains("h2");
     }
+
+    public String idColumnDefinition() {
+        if (isPostgreSql()) {
+            return "BIGSERIAL PRIMARY KEY";
+        }
+
+        return "BIGINT AUTO_INCREMENT PRIMARY KEY";
+    }
 }

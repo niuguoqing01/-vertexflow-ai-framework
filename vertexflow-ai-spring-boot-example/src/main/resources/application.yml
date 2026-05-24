@@ -6,6 +6,10 @@ server:
       enabled: true
       force: true
 spring:
+#   url: jdbc:postgresql://localhost:5432/vertexflow_ai
+  #    username: postgres
+  #    password: 123456
+  #    driver-class-name: org.postgresql.Driver
   datasource:
     url: jdbc:mysql://localhost:3306/vertexflow_ai?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: root
@@ -26,6 +30,7 @@ vertexflow:
       enabled: true
       type: jdbc
       max-messages: 20
+#       spring-postgres-user
       conversation-id: spring-mysql-user
       jdbc:
         table-name: vertexflow_chat_memory

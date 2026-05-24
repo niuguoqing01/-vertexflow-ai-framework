@@ -151,14 +151,15 @@ public class JdbcChatMemory implements ChatMemory {
 
             String sql = """
                 CREATE TABLE IF NOT EXISTS %s (
-                    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                    id %s,
                     conversation_id VARCHAR(255) NOT NULL,
                     role VARCHAR(50) NOT NULL,
                     content %s NOT NULL,
                     created_at %s
                 )
-                """.formatted(
+        """.formatted(
                     tableName,
+                    dialect.idColumnDefinition(),
                     dialect.contentColumnType(),
                     dialect.createdAtColumnDefinition()
             );
