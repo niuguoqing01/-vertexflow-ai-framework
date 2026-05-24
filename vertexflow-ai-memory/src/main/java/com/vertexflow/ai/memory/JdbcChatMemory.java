@@ -43,6 +43,7 @@ public class JdbcChatMemory implements ChatMemory {
 
         if (autoCreateTable) {
             createTableIfNecessary();
+            createIndexesIfNecessary();
         }
     }
 
@@ -382,5 +383,69 @@ public class JdbcChatMemory implements ChatMemory {
         }
 
         return "TIMESTAMP NOT NULL";
+    }
+
+    private void createIndexesIfNecessary() {
+        try (Connection connection = getConnection()) {
+            String databaseProductName = connection.getMetaData().getDatabaseProductName();
+
+            createIndexIfNecessary(
+                    connection,
+                    databaseProductName,
+                    "idx_" + tableName + "_conversation_id",
+                    "conversation_id"
+            );
+
+            createIndexIfNecessary(
+                    connection,
+                    databaseProductName,
+                    "idx_" + tableName + "_created_at",
+                    "created_at"
+            );
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to create JDBC chat memory indexes", e);
+        }
+    }
+
+    private void createIndexIfNecessary(
+            Connection connection,
+            String databaseProductName,
+            String indexName,
+            String columnName
+    ) throws SQLException {
+        if (indexExists(connection, indexName)) {
+            return;
+        }
+
+        String sql = """
+            CREATE INDEX %s
+            ON %s (%s)
+            """.formatted(indexName, tableName, columnName);
+
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(sql);
+        }
+    }
+
+    private boolean indexExists(Connection connection, String indexName) throws SQLException {
+        DatabaseMetaData metaData = connection.getMetaData();
+
+        try (ResultSet resultSet = metaData.getIndexInfo(
+                connection.getCatalog(),
+                null,
+                tableName,
+                false,
+                false
+        )) {
+            while (resultSet.next()) {
+                String existingIndexName = resultSet.getString("INDEX_NAME");
+
+                if (existingIndexName != null && existingIndexName.equalsIgnoreCase(indexName)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }
