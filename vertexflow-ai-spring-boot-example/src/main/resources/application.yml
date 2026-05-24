@@ -29,7 +29,7 @@ vertexflow:
       conversation-id: spring-mysql-user
       jdbc:
         table-name: vertexflow_chat_memory
-        auto-create-table: false
+        auto-create-table: true
 
 #    memory:
 #      enabled: true

@@ -140,18 +140,23 @@ public class JdbcChatMemory implements ChatMemory {
     }
 
     private void createTableIfNecessary() {
-        String sql = """
+        try (Connection connection = getConnection();
+             Statement statement = connection.createStatement()) {
+
+            String databaseProductName = connection.getMetaData().getDatabaseProductName();
+
+            String contentColumnType = resolveContentColumnType(databaseProductName);
+            String createdAtColumn = resolveCreatedAtColumn(databaseProductName);
+
+            String sql = """
                 CREATE TABLE IF NOT EXISTS %s (
                     id BIGINT AUTO_INCREMENT PRIMARY KEY,
                     conversation_id VARCHAR(255) NOT NULL,
                     role VARCHAR(50) NOT NULL,
-                    content CLOB NOT NULL,
-                    created_at TIMESTAMP NOT NULL
+                    content %s NOT NULL,
+                    created_at %s
                 )
-                """.formatted(tableName);
-
-        try (Connection connection = getConnection();
-             Statement statement = connection.createStatement()) {
+                """.formatted(tableName, contentColumnType, createdAtColumn);
 
             statement.execute(sql);
         } catch (Exception e) {
@@ -341,5 +346,41 @@ public class JdbcChatMemory implements ChatMemory {
         } catch (Exception e) {
             throw new IllegalStateException("Failed to delete all JDBC chat memory", e);
         }
+    }
+
+    private String resolveContentColumnType(String databaseProductName) {
+        if (databaseProductName == null) {
+            return "CLOB";
+        }
+
+        String name = databaseProductName.toLowerCase();
+
+        if (name.contains("mysql") || name.contains("mariadb")) {
+            return "LONGTEXT";
+        }
+
+        if (name.contains("postgresql")) {
+            return "TEXT";
+        }
+
+        if (name.contains("h2")) {
+            return "CLOB";
+        }
+
+        return "CLOB";
+    }
+
+    private String resolveCreatedAtColumn(String databaseProductName) {
+        if (databaseProductName == null) {
+            return "TIMESTAMP NOT NULL";
+        }
+
+        String name = databaseProductName.toLowerCase();
+
+        if (name.contains("mysql") || name.contains("mariadb")) {
+            return "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP";
+        }
+
+        return "TIMESTAMP NOT NULL";
     }
 }
