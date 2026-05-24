@@ -58,31 +58,34 @@ public class JdbcChatMemory implements ChatMemory {
             return List.of();
         }
 
-        String sql = """
-                SELECT role, content
-                FROM %s
-                WHERE conversation_id = ?
-                ORDER BY id DESC
-                LIMIT ?
-                """.formatted(tableName);
-
         List<ChatMessage> messages = new ArrayList<>();
 
-        try (Connection connection = getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (Connection connection = getConnection()) {
+            JdbcMemoryDialect dialect = JdbcMemoryDialect.of(
+                    connection.getMetaData().getDatabaseProductName()
+            );
 
-            statement.setString(1, conversationId);
-            statement.setInt(2, maxMessages);
+            String sql = dialect.selectRecentMessagesSql(tableName);
 
-            try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    String role = resultSet.getString("role");
-                    String content = resultSet.getString("content");
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                if (sql.contains("TOP (?)")) {
+                    statement.setInt(1, maxMessages);
+                    statement.setString(2, conversationId);
+                } else {
+                    statement.setString(1, conversationId);
+                    statement.setInt(2, maxMessages);
+                }
 
-                    messages.add(new ChatMessage(
-                            Role.valueOf(role),
-                            content
-                    ));
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    while (resultSet.next()) {
+                        String role = resultSet.getString("role");
+                        String content = resultSet.getString("content");
+
+                        messages.add(new ChatMessage(
+                                Role.valueOf(role),
+                                content
+                        ));
+                    }
                 }
             }
 

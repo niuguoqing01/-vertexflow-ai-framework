@@ -79,4 +79,44 @@ public class JdbcMemoryDialect {
 
         return "BIGINT AUTO_INCREMENT PRIMARY KEY";
     }
+
+    public String selectRecentMessagesSql(String tableName) {
+        if (isSqlServer()) {
+            return """
+                SELECT TOP (?) role, content
+                FROM %s
+                WHERE conversation_id = ?
+                ORDER BY id DESC
+                """.formatted(tableName);
+        }
+
+        if (isOracle()) {
+            return """
+                SELECT role, content
+                FROM (
+                    SELECT role, content
+                    FROM %s
+                    WHERE conversation_id = ?
+                    ORDER BY id DESC
+                )
+                WHERE ROWNUM <= ?
+                """.formatted(tableName);
+        }
+
+        return """
+            SELECT role, content
+            FROM %s
+            WHERE conversation_id = ?
+            ORDER BY id DESC
+            LIMIT ?
+            """.formatted(tableName);
+    }
+
+    private boolean isSqlServer() {
+        return databaseProductName.contains("microsoft sql server");
+    }
+
+    private boolean isOracle() {
+        return databaseProductName.contains("oracle");
+    }
 }
