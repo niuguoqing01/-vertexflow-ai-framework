@@ -1,4 +1,6 @@
 package com.vertexflow.ai.memory;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 public class JdbcMemoryDialect {
 
@@ -118,5 +120,20 @@ public class JdbcMemoryDialect {
 
     private boolean isOracle() {
         return databaseProductName.contains("oracle");
+    }
+
+    public void bindSelectRecentMessagesParams(
+            PreparedStatement statement,
+            String conversationId,
+            int maxMessages
+    ) throws SQLException {
+        if (isSqlServer()) {
+            statement.setInt(1, maxMessages);
+            statement.setString(2, conversationId);
+            return;
+        }
+
+        statement.setString(1, conversationId);
+        statement.setInt(2, maxMessages);
     }
 }

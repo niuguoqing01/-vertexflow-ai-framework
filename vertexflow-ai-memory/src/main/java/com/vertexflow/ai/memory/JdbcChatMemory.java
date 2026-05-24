@@ -68,13 +68,7 @@ public class JdbcChatMemory implements ChatMemory {
             String sql = dialect.selectRecentMessagesSql(tableName);
 
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                if (sql.contains("TOP (?)")) {
-                    statement.setInt(1, maxMessages);
-                    statement.setString(2, conversationId);
-                } else {
-                    statement.setString(1, conversationId);
-                    statement.setInt(2, maxMessages);
-                }
+                dialect.bindSelectRecentMessagesParams(statement, conversationId, maxMessages);
 
                 try (ResultSet resultSet = statement.executeQuery()) {
                     while (resultSet.next()) {
