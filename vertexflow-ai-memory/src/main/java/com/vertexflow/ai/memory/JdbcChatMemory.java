@@ -145,10 +145,9 @@ public class JdbcChatMemory implements ChatMemory {
         try (Connection connection = getConnection();
              Statement statement = connection.createStatement()) {
 
-            String databaseProductName = connection.getMetaData().getDatabaseProductName();
-
-            String contentColumnType = resolveContentColumnType(databaseProductName);
-            String createdAtColumn = resolveCreatedAtColumn(databaseProductName);
+            JdbcMemoryDialect dialect = JdbcMemoryDialect.of(
+                    connection.getMetaData().getDatabaseProductName()
+            );
 
             String sql = """
                 CREATE TABLE IF NOT EXISTS %s (
@@ -158,7 +157,11 @@ public class JdbcChatMemory implements ChatMemory {
                     content %s NOT NULL,
                     created_at %s
                 )
-                """.formatted(tableName, contentColumnType, createdAtColumn);
+                """.formatted(
+                    tableName,
+                    dialect.contentColumnType(),
+                    dialect.createdAtColumnDefinition()
+            );
 
             statement.execute(sql);
         } catch (Exception e) {
@@ -350,41 +353,9 @@ public class JdbcChatMemory implements ChatMemory {
         }
     }
 
-    private String resolveContentColumnType(String databaseProductName) {
-        if (databaseProductName == null) {
-            return "CLOB";
-        }
 
-        String name = databaseProductName.toLowerCase();
 
-        if (name.contains("mysql") || name.contains("mariadb")) {
-            return "LONGTEXT";
-        }
 
-        if (name.contains("postgresql")) {
-            return "TEXT";
-        }
-
-        if (name.contains("h2")) {
-            return "CLOB";
-        }
-
-        return "CLOB";
-    }
-
-    private String resolveCreatedAtColumn(String databaseProductName) {
-        if (databaseProductName == null) {
-            return "TIMESTAMP NOT NULL";
-        }
-
-        String name = databaseProductName.toLowerCase();
-
-        if (name.contains("mysql") || name.contains("mariadb")) {
-            return "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP";
-        }
-
-        return "TIMESTAMP NOT NULL";
-    }
 
     private String indexName(String columnName) {
         return "idx_" + tableName + "_" + columnName;
@@ -422,10 +393,8 @@ public class JdbcChatMemory implements ChatMemory {
             return;
         }
 
-        String sql = """
-            CREATE INDEX %s
-            ON %s (%s)
-            """.formatted(indexName, tableName, columnName);
+        JdbcMemoryDialect dialect = JdbcMemoryDialect.of(databaseProductName);
+        String sql = dialect.createIndexSql(indexName, tableName, columnName);
 
         try (Statement statement = connection.createStatement()) {
             statement.execute(sql);
